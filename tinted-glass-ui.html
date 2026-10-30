@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tinted Glass — Mobile UI</title>
+<style>
+  :root{
+    /* cool blue-grey palette + a single teal tint */
+    --bg-0:#0c141d;
+    --bg-1:#101b27;
+    --bg-2:#16222f;
+
+    /* glass: higher opacity, tinted, NOT fully transparent */
+    --glass:rgba(22,38,52,0.58);
+    --glass-2:rgba(18,31,44,0.66);
+    --glass-border:rgba(150,192,214,0.16);
+    --glass-hi:rgba(190,222,238,0.10);
+
+    /* single teal accent wash */
+    --teal:#39d8c4;
+    --teal-dim:rgba(57,216,196,0.14);
+    --teal-line:rgba(57,216,196,0.30);
+
+    --text:#eaf3f7;
+    --text-2:#9bb1bf;
+    --text-3:#6f8794;
+
+    --r-lg:28px;
+    --r-md:20px;
+    --r-sm:14px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(120% 120% at 50% -10%, #14202c 0%, var(--bg-0) 60%);
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:32px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- phone stage ---------- */
+  .stage{
+    position:relative;
+    width:392px;
+    height:820px;
+    border-radius:52px;
+    padding:14px;
+    background:linear-gradient(160deg,#1a2734,#0d151e);
+    box-shadow:
+      0 40px 90px rgba(0,0,0,0.55),
+      0 2px 0 rgba(255,255,255,0.05) inset,
+      0 -1px 0 rgba(0,0,0,0.6) inset;
+  }
+  .screen{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:40px;
+    overflow:hidden;
+    background:
+      radial-gradient(85% 55% at 78% 6%, #1d3344 0%, rgba(29,51,68,0) 55%),
+      radial-gradient(70% 50% at 12% 14%, #173040 0%, rgba(23,48,64,0) 50%),
+      linear-gradient(170deg,var(--bg-2),var(--bg-0));
+  }
+
+  /* soft ambient lighting blobs (single teal tint, no rainbow) */
+  .ambient{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .ambient span{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5;}
+  .ambient .a1{width:240px;height:240px;top:-50px;right:-40px;
+    background:radial-gradient(circle,rgba(57,216,196,0.30),rgba(57,216,196,0)70%);}
+  .ambient .a2{width:300px;height:300px;bottom:-60px;left:-70px;
+    background:radial-gradient(circle,rgba(70,120,150,0.28),rgba(70,120,150,0)70%);}
+  .ambient .a3{width:180px;height:180px;top:40%;left:55%;
+    background:radial-gradient(circle,rgba(45,90,110,0.22),rgba(45,90,110,0)70%);}
+
+  /* ---------- shared glass ---------- */
+  .glass{
+    position:relative;
+    background:var(--glass);
+    backdrop-filter:blur(24px) saturate(125%);
+    -webkit-backdrop-filter:blur(24px) saturate(125%);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-md);
+    box-shadow:
+      0 18px 44px rgba(0,0,0,0.38),
+      0 1px 0 var(--glass-hi) inset,
+      0 -1px 0 rgba(0,0,0,0.35) inset;
+  }
+  /* subtle teal wash over glass surfaces */
+  .glass::after{
+    content:"";
+    position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(165deg,var(--teal-dim) 0%, rgba(57,216,196,0) 45%);
+    opacity:.9;pointer-events:none;
+  }
+
+  /* ---------- content layout ---------- */
+  .content{
+    position:relative;z-index:2;
+    height:100%;
+    padding:54px 22px 22px;
+    display:flex;flex-direction:column;gap:16px;
+  }
+
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:46px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 30px;font-size:14px;font-weight:600;color:var(--text);
+    z-index:3;
+  }
+  .statusbar .dots{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--text-2);}
+  .statusbar .pill{display:flex;gap:6px;align-items:center;}
+
+  /* header */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
+  .header .hi{font-size:13px;color:var(--text-2);letter-spacing:.04em;}
+  .header .name{font-size:21px;font-weight:650;margin-top:2px;letter-spacing:.01em;}
+  .avatar{
+    width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(160deg,#2a4658,#16242f);
+    border:1px solid var(--glass-border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--teal);font-size:17px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4);
+  }
+
+  /* hero card */
+  .hero{padding:20px;display:flex;align-items:center;gap:18px;}
+  .ring{
+    --p:78;
+    width:84px;height:84px;border-radius:50%;flex:none;
+    background:
+      conic-gradient(var(--teal) calc(var(--p)*1%), rgba(255,255,255,0.07) 0);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .ring::before{
+    content:"";position:absolute;inset:7px;border-radius:50%;
+    background:linear-gradient(160deg,#16242f,#0e1822);
+    box-shadow:0 2px 8px rgba(0,0,0,0.4) inset;
+  }
+  .ring .val{position:relative;font-size:22px;font-weight:700;color:var(--text);}
+  .ring .val small{font-size:11px;color:var(--text-2);font-weight:500;}
+  .hero .meta .label{font-size:12px;color:var(--text-2);letter-spacing:.05em;text-transform:uppercase;}
+  .hero .meta .big{font-size:26px;font-weight:680;margin-top:3px;letter-spacing:.01em;}
+  .hero .meta .sub{font-size:13px;color:var(--text-3);margin-top:4px;}
+
+  /* section label */
+  .seclabel{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:4px;padding:0 4px;
+  }
+  .seclabel .t{font-size:14px;font-weight:650;color:var(--text);}
+  .seclabel .n{font-size:12px;color:var(--teal);font-weight:600;}
+
+  /* review list */
+  .list{display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+  .item{padding:16px 16px;display:flex;align-items:center;gap:14px;}
+  .item .ic{
+    width:42px;height:42px;border-radius:13px;flex:none;
+    background:linear-gradient(160deg,rgba(57,216,196,0.18),rgba(57,216,196,0.04));
+    border:1px solid var(--teal-line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--teal);font-size:18px;font-weight:700;
+  }
+  .item .tx{flex:1;min-width:0;}
+  .item .tx .t{font-size:15px;font-weight:600;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item .tx .s{font-size:12.5px;color:var(--text-3);margin-top:3px;}
+  .item .due{
+    font-size:11.5px;color:var(--text-2);
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    padding:5px 10px;border-radius:999px;font-weight:600;flex:none;
+  }
+  .item .due.hot{color:var(--teal);border-color:var(--teal-line);background:var(--teal-dim);}
+
+  .spacer{flex:1;}
+
+  /* bottom nav */
+  .nav{
+    margin-top:auto;
+    padding:12px 14px;
+    display:flex;align-items:center;justify-content:space-around;
+    border-radius:var(--r-lg);
+  }
+  .nav .b{display:flex;flex-direction:column;align-items:center;gap:5px;
+    color:var(--text-3);font-size:10.5px;font-weight:600;flex:1;}
+  .nav .b .gi{font-size:20px;line-height:1;}
+  .nav .b.active{color:var(--teal);}
+  .nav .b.active .gi{filter:drop-shadow(0 0 8px rgba(57,216,196,0.5));}
+
+  /* FAB */
+  .fab{
+    position:absolute;right:30px;bottom:104px;z-index:4;
+    width:58px;height:58px;border-radius:50%;
+    background:linear-gradient(160deg,var(--teal),#1f9c8c);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;font-weight:300;color:#06231f;
+    box-shadow:0 14px 30px rgba(31,156,140,0.45),0 1px 0 rgba(255,255,255,0.3) inset;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="screen">
+      <div class="ambient"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="pill">
+          <span class="dots">●●●</span>
+          <span>Wi-Fi</span>
+          <span>🔋</span>
+        </span>
+      </div>
+
+      <div class="content">
+        <div class="header">
+          <div>
+            <div class="hi">Good evening</div>
+            <div class="name">Lin</div>
+          </div>
+          <div class="avatar">L</div>
+        </div>
+
+        <!-- hero -->
+        <div class="glass hero">
+          <div class="ring" style="--p:78"><span class="val">78<small>%</small></span></div>
+          <div class="meta">
+            <div class="label">Retention</div>
+            <div class="big">12 due today</div>
+            <div class="sub">On track — keep the rhythm</div>
+          </div>
+        </div>
+
+        <div class="seclabel">
+          <span class="t">Due for review</span>
+          <span class="n">4 urgent</span>
+        </div>
+
+        <!-- list -->
+        <div class="list">
+          <div class="glass item">
+            <div class="ic">あ</div>
+            <div class="tx"><div class="t">Japanese · Core verbs</div><div class="s">48 cards · last seen 3d ago</div></div>
+            <div class="due hot">now</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">∑</div>
+            <div class="tx"><div class="t">Linear Algebra · Eigen</div><div class="s">32 cards · last seen 2d ago</div></div>
+            <div class="due hot">10m</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">📖</div>
+            <div class="tx"><div class="t">Product Spec notes</div><div class="s">21 cards · last seen 1d ago</div></div>
+            <div class="due">1h</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">FR</div>
+            <div class="tx"><div class="t">French · Travel</div><div class="s">40 cards · last seen 6h ago</div></div>
+            <div class="due">3h</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <!-- bottom nav -->
+        <div class="glass nav">
+          <div class="b active"><span class="gi">◉</span>Today</div>
+          <div class="b"><span class="gi">⊞</span>Decks</div>
+          <div class="b"><span class="gi">⌕</span>Discover</div>
+          <div class="b"><span class="gi">⚙</span>Settings</div>
+        </div>
+      </div>
+
+      <div class="fab">+</div>
+    </div>
+  </div>
+</body>
+</html>

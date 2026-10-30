@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>人生系统 · LifeOS — Liquid Glass</title>
+<style>
+  :root{
+    --bg-0:#070d14; --bg-1:#0c1622; --bg-2:#13202f;
+    --glass:rgba(28,46,64,0.42);
+    --glass-2:rgba(20,36,52,0.55);
+    --glass-border:rgba(168,208,230,0.22);
+    --glass-rim:rgba(190,225,245,0.40);
+    --gloss:rgba(255,255,255,0.16);
+    --teal:#5fe6d4; --teal-dim:rgba(95,230,212,0.16);
+    --text:#eef6fb; --text-2:#a9c0cf; --text-3:#74909f;
+    --bar-glass:rgba(16,30,44,0.40); --bar-glass-solid:rgba(14,26,40,0.58);
+    --r-lg:32px; --r-md:22px; --r-sm:15px;
+    /* LifeOS category tints — kept low-sat to preserve calm */
+    --c-read:#9b8cff; --c-fit:#ff7d7d; --c-diet:#5fe0a8; --c-custom:#ffc266;
+  }
+  [data-theme="light"]{
+    --bg-0:#cdd9e3; --bg-1:#dde7ef; --bg-2:#e8eef4;
+    --glass:rgba(255,255,255,0.50);
+    --glass-2:rgba(255,255,255,0.62);
+    --glass-border:rgba(90,130,160,0.28);
+    --glass-rim:rgba(80,120,150,0.45);
+    --gloss:rgba(255,255,255,0.55);
+    --teal:#16b6a3; --teal-dim:rgba(22,182,163,0.14);
+    --text:#10222e; --text-2:#42627a; --text-3:#6a8799;
+    --bar-glass:rgba(255,255,255,0.42); --bar-glass-solid:rgba(255,255,255,0.64);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(120% 120% at 50% -10%, #11202e 0%, var(--bg-0) 62%);
+    color:var(--text);display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:20px;overflow:hidden;-webkit-font-smoothing:antialiased;
+    transition:background .5s ease;
+  }
+  [data-theme="light"] body{}
+
+  /* ---------- phone stage ---------- */
+  .stage{position:relative;width:398px;height:840px;border-radius:54px;padding:14px;margin:auto;
+    transform-origin:center center;flex:none;
+    background:linear-gradient(160deg,#1b2a39,#0a121b);
+    box-shadow:0 50px 110px rgba(0,0,0,0.6),0 2px 0 rgba(255,255,255,0.06) inset,0 -1px 0 rgba(0,0,0,0.65) inset;
+    transition:background .5s ease;}
+  [data-theme="light"] .stage{background:linear-gradient(160deg,#aebfce,#8fa3b5);}
+  .screen{position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;
+    display:flex;flex-direction:column;
+    background:radial-gradient(90% 60% at 80% 4%, #1c3346 0%, rgba(28,51,70,0) 55%),
+      radial-gradient(75% 55% at 10% 12%, #152b3c 0%, rgba(21,43,60,0) 52%),
+      linear-gradient(172deg,var(--bg-2),var(--bg-0));
+    transition:background .5s ease;}
+
+  /* ambient */
+  .ambient{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .ambient span{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;transition:background .5s ease;}
+  .ambient .a1{width:260px;height:260px;top:-60px;right:-50px;background:radial-gradient(circle,rgba(95,230,212,0.26),rgba(95,230,212,0)70%);}
+  .ambient .a2{width:320px;height:320px;bottom:-70px;left:-80px;background:radial-gradient(circle,rgba(74,128,164,0.30),rgba(74,128,164,0)70%);}
+  .ambient .a3{width:200px;height:200px;top:42%;left:52%;background:radial-gradient(circle,rgba(60,108,140,0.24),rgba(60,108,140,0)70%);}
+
+  /* ---------- liquid glass ---------- */
+  .glass{position:relative;background:var(--glass);backdrop-filter:blur(26px) saturate(135%);
+    -webkit-backdrop-filter:blur(26px) saturate(135%);border:1px solid var(--glass-border);
+    border-radius:var(--r-md);
+    box-shadow:0 22px 50px rgba(0,0,0,0.42),0 1px 0 var(--gloss) inset,0 -1px 0 rgba(0,0,0,0.30) inset;
+    overflow:hidden;transition:background .5s ease,border-color .5s ease,transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease;}
+  .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(150deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%),
+      linear-gradient(330deg, var(--teal-dim) 0%, rgba(95,230,212,0) 42%);}
+  .glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    border:1px solid var(--glass-rim);
+    -webkit-mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+            mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+    opacity:.6;}
+
+  /* ---------- layout ---------- */
+  .content{position:relative;z-index:2;flex:1;min-height:0;display:flex;flex-direction:column;}
+  /* ---------- top floating bar (statusbar + appbar merged, dock-like) ---------- */
+  .topbar{position:absolute;top:10px;left:12px;right:12px;z-index:8;border-radius:26px;
+    background:var(--bar-glass);backdrop-filter:blur(16px) saturate(135%);
+    -webkit-backdrop-filter:blur(16px) saturate(135%);
+    border:1px solid var(--glass-border);
+    box-shadow:0 14px 34px rgba(0,0,0,0.28),0 1px 0 var(--gloss) inset,0 -1px 0 rgba(0,0,0,0.18) inset;
+    transition:background .35s ease,box-shadow .35s ease;}
+  .topbar::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    border:1px solid var(--glass-rim);
+    -webkit-mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+            mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+    opacity:.55;}
+  .topbar.scrolled{background:var(--bar-glass-solid);box-shadow:0 18px 42px rgba(0,0,0,0.42),0 1px 0 var(--gloss) inset;}
+  .statusbar{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:14px;font-weight:600;flex:none;}
+  .statusbar .pill{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text-2);}
+
+  .appbar{padding:2px 12px 12px;display:flex;align-items:center;justify-content:space-between;}
+  .appbar .t{font-size:20px;font-weight:700;letter-spacing:.5px;}
+  .appbar .s{font-size:12px;color:var(--text-2);margin-top:2px;}
+  .appbar .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(160deg,#2c4a5e,#13222e);
+    border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;
+    color:var(--teal);font-size:20px;box-shadow:0 8px 20px rgba(0,0,0,0.45),0 1px 0 var(--gloss) inset;}
+
+  .scroll{flex:1;overflow-y:auto;padding:126px 22px 118px;display:flex;flex-direction:column;gap:14px;
+    scrollbar-width:none;}
+  .scroll::-webkit-scrollbar{width:0;}
+
+  .card{padding:18px;}
+  .row{display:flex;align-items:center;gap:12px;}
+  .between{justify-content:space-between;}
+  .muted{color:var(--text-3);font-size:13px;}
+  .pill2{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11.5px;
+    background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text-2);}
+
+  /* floating orb */
+  .orb{width:64px;height:64px;border-radius:50%;flex:none;position:relative;
+    background:radial-gradient(60% 60% at 32% 28%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 45%),
+      radial-gradient(120% 120% at 70% 75%, var(--teal) 0%, #2f7e8f 55%, #16323f 100%);
+    box-shadow:0 14px 30px rgba(20,90,90,0.45),0 1px 0 rgba(255,255,255,0.4) inset,0 -8px 18px rgba(0,0,0,0.35) inset;}
+  .orb::after{content:"";position:absolute;top:9px;left:13px;width:22px;height:13px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,0.7),rgba(255,255,255,0)70%);filter:blur(2px);}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .orb.f{animation:float 7s ease-in-out infinite;}
+
+  /* ---------- home interactive orb ---------- */
+  .homeOrb{width:72px;height:72px;border-radius:50%;flex:none;position:relative;cursor:pointer;
+    user-select:none;touch-action:none;outline:none;
+    background:radial-gradient(60% 60% at 34% 28%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 46%),
+      radial-gradient(125% 125% at 68% 78%, var(--teal) 0%, #2f7e8f 52%, #14313f 100%);
+    box-shadow:0 14px 30px rgba(20,90,90,0.5),0 1px 0 rgba(255,255,255,0.4) inset,0 -8px 18px rgba(0,0,0,0.38) inset;}
+  .homeOrb .variant{display:none;width:0;height:0;position:absolute;top:50%;left:50%;}
+  .homeOrb .variant.on{display:block;}
+  .homeOrb .look{position:absolute;top:50%;left:50%;display:flex;justify-content:center;align-items:center;
+    transform:translate(-50%,-50%);transition:transform .25s cubic-bezier(.34,1.4,.5,1);}
+  .homeOrb .eyes{display:flex;gap:14px;align-items:center;animation:hwander 7s ease-in-out infinite;}
+  @keyframes hwander{0%,100%{transform:translateX(-2px)}50%{transform:translateX(2px)}}
+  .homeOrb.bob{animation:hbob 4.2s ease-in-out infinite;}
+  .homeOrb.sway{animation:sway 4s ease-in-out infinite;}
+  .homeOrb.bobC{animation:hbobC 4.6s ease-in-out infinite;}
+  @keyframes hbob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.02)}}
+  @keyframes hbobC{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+  /* eyes (scaled for 72px) */
+  .heDot{width:11px;height:11px;border-radius:50%;background:#0c2a30;position:relative;
+    animation:hblink 4.6s ease-in-out infinite;transform-origin:center;}
+  .heDot::after{content:"";position:absolute;top:2px;left:2px;width:3.5px;height:3.5px;border-radius:50%;background:#eafffb;opacity:.9;}
+  @keyframes hblink{0%,86%,100%{transform:scaleY(1)}92%{transform:scaleY(.12)}}
+  .heSquint{width:14px;height:2.6px;border-radius:3px;background:#0c2a30;
+    animation:hsquint 3.4s ease-in-out infinite;transform-origin:center;}
+  @keyframes hsquint{0%,100%{transform:scaleY(1)}50%{transform:scaleY(2.4)}}
+  .heX{width:13px;height:13px;position:relative;animation:hwigX 2.8s ease-in-out infinite;transform-origin:center;}
+  .heX::before,.heX::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:2.4px;border-radius:3px;
+    background:#0c2a30;transform-origin:center;}
+  .heX::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .heX::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  @keyframes hwigX{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  .heBean{width:9px;height:15px;border-radius:11px;background:#0c2a30;transform-origin:center;
+    animation:hblinkBean 3.9s cubic-bezier(.5,1.7,.45,1) infinite;}
+  @keyframes hblinkBean{0%,78%,100%{transform:scaleY(1)}86%{transform:scaleY(.12)}92%{transform:scaleY(1.22)}}
+
+  /* progress ring */
+  .ring-wrap{position:relative;width:92px;height:92px;flex:none;}
+  .ring-wrap svg{transform:rotate(0);}
+  .ring-fg{transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1);}
+  .ring-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring-val b{font-size:22px;font-weight:700;}
+  .ring-val span{font-size:10px;color:var(--text-3);}
+
+  /* buttons */
+  .btn{appearance:none;border:none;border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;
+    cursor:pointer;background:linear-gradient(160deg,var(--teal),#239e8d);color:#04231f;position:relative;overflow:hidden;
+    box-shadow:0 10px 24px rgba(35,158,141,0.35),0 1px 0 rgba(255,255,255,0.4) inset;transition:transform .12s ease;
+    font-family:inherit;}
+  .btn.ghost{background:rgba(255,255,255,0.07);color:var(--text);border:1px solid var(--glass-border);box-shadow:none;}
+  .btn:active{transform:scale(.95);}
+  .btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.45);transform:translate(-50%,-50%) scale(0);
+    pointer-events:none;animation:rip .6s ease-out forwards;}
+  @keyframes rip{to{transform:translate(-50%,-50%) scale(1);opacity:0;}}
+
+  /* plan / task rows */
+  .plan{padding:15px;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;}
+  .plan:hover{transform:translateY(-3px);}
+  .plan:active{transform:scale(.98);}
+  .plan .ic{width:44px;height:44px;border-radius:13px;flex:none;display:flex;align-items:center;justify-content:center;
+    font-size:21px;box-shadow:0 1px 0 var(--gloss) inset;}
+  .plan .pct{font-size:13px;color:var(--text-2);font-weight:600;}
+
+  .task{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .task:last-child{border-bottom:none;}
+  .task .check{width:24px;height:24px;border-radius:8px;flex:none;margin-top:1px;cursor:pointer;position:relative;
+    border:1.5px solid var(--glass-border);background:rgba(255,255,255,0.05);transition:background .25s,border-color .25s;}
+  .task .check svg{position:absolute;inset:0;width:100%;height:100%;}
+  .task .check path{stroke:var(--bg-0);stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:22;stroke-dashoffset:22;transition:stroke-dashoffset .35s ease .05s;}
+  .task.done .check{background:var(--teal);border-color:var(--teal);}
+  .task.done .check path{stroke-dashoffset:0;}
+  .task .tt{font-size:15px;transition:color .3s,opacity .3s;}
+  .task.done .tt{color:var(--text-3);text-decoration:line-through;}
+  .task .meta{font-size:12px;color:var(--text-3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* filter chips */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{padding:8px 13px;border-radius:999px;font-size:13px;cursor:pointer;border:1px solid var(--glass-border);
+    background:rgba(255,255,255,0.05);color:var(--text-2);transition:all .2s ease;}
+  .chip:active{transform:scale(.94);}
+  .chip.sel{background:var(--teal);color:#04231f;border-color:transparent;font-weight:600;box-shadow:0 6px 16px rgba(35,158,141,0.4);}
+
+  /* toggles */
+  .switch{width:50px;height:29px;border-radius:999px;background:rgba(255,255,255,0.12);border:1px solid var(--glass-border);
+    position:relative;cursor:pointer;transition:background .3s ease;flex:none;}
+  .switch .knob{position:absolute;top:2px;left:2px;width:23px;height:23px;border-radius:50%;background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+  .switch.on{background:var(--teal);}
+  .switch.on .knob{transform:translateX(21px);}
+
+  /* segmented */
+  .seg{display:flex;gap:8px;}
+  .seg button{flex:1;padding:9px;border-radius:11px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);
+    color:var(--text-2);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;}
+  .seg button:active{transform:scale(.96);}
+  .seg button.sel{background:var(--teal);color:#04231f;border-color:transparent;font-weight:600;}
+
+  /* life map */
+  .relgraph{width:100%;height:auto;display:block;}
+  .relgraph line{stroke-dasharray:200;stroke-dashoffset:200;animation:draw 1s ease forwards;}
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  .relgraph .node{opacity:0;animation:pop .5s ease forwards;}
+  @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+
+  /* bottom nav */
+  .nav{flex:none;margin:0 16px;position:absolute;left:0;right:0;bottom:18px;height:68px;
+    display:flex;align-items:center;border-radius:var(--r-lg);padding:0 6px;z-index:5;}
+  .nav .ind{position:absolute;top:9px;bottom:9px;left:0;width:64px;border-radius:18px;
+    background:var(--teal-dim);border:1px solid rgba(95,230,212,0.3);
+    box-shadow:0 1px 0 var(--gloss) inset;transition:transform .35s cubic-bezier(.2,.85,.25,1),width .25s ease;}
+  .nav button{flex:1;background:none;border:none;color:var(--text-3);cursor:pointer;z-index:2;position:relative;
+    display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-family:inherit;transition:color .25s;padding:6px 0;}
+  .nav button .ico{font-size:20px;line-height:1;transition:transform .25s ease;}
+  .nav button.active{color:var(--teal);}
+  .nav button.active .ico{transform:translateY(-2px) scale(1.08);}
+
+  /* FAB */
+  .fab{position:absolute;right:26px;bottom:100px;z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:12px;}
+  .fab .act{display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(10px) scale(.8);
+    pointer-events:none;transition:all .28s cubic-bezier(.2,.8,.2,1);}
+  .fab.open .act{opacity:1;transform:none;pointer-events:auto;}
+  .fab .act .lbl{background:var(--glass-2);border:1px solid var(--glass-border);backdrop-filter:blur(20px);
+    padding:7px 12px;border-radius:12px;font-size:13px;color:var(--text);box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+  .fab .mini{width:46px;height:46px;border-radius:50%;background:linear-gradient(160deg,#2c4a5e,#16313f);
+    border:1px solid var(--glass-border);color:var(--teal);font-size:20px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 20px rgba(0,0,0,0.4),0 1px 0 var(--gloss) inset;}
+  .fab .main{width:58px;height:58px;border-radius:50%;background:linear-gradient(160deg,var(--teal),#239e8d);
+    color:#04231f;font-size:28px;font-weight:300;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 16px 34px rgba(35,158,141,0.5),0 1px 0 rgba(255,255,255,0.4) inset;transition:transform .3s ease;}
+  .fab.open .main{transform:rotate(135deg);}
+
+  /* sheet */
+  .overlay{position:absolute;inset:0;background:rgba(4,9,14,0.55);backdrop-filter:blur(3px);z-index:20;
+    display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s ease;}
+  .overlay.show{opacity:1;pointer-events:auto;}
+  .sheet{width:100%;background:var(--glass-2);backdrop-filter:blur(30px) saturate(135%);
+    border:1px solid var(--glass-border);border-radius:28px 28px 0 0;padding:22px 20px 30px;
+    transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.85,.25,1);position:relative;
+    box-shadow:0 1px 0 var(--gloss) inset,0 -1px 0 rgba(0,0,0,0.3) inset;}
+  .overlay.show .sheet{transform:translateY(0);}
+  .sheet h3{margin:0 0 6px;font-size:18px;}
+  .sheet .x{position:absolute;top:16px;right:18px;font-size:22px;color:var(--text-3);background:none;border:none;cursor:pointer;}
+  .field{display:block;font-size:12px;color:var(--text-3);margin:14px 0 6px;}
+  .sheet input,.sheet select{width:100%;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--glass-border);
+    border-radius:11px;padding:11px 12px;font-size:15px;font-family:inherit;}
+
+  /* toast */
+  .toast{position:absolute;left:50%;top:60px;transform:translate(-50%,-16px);background:rgba(10,18,26,0.85);
+    backdrop-filter:blur(14px);color:#fff;padding:10px 18px;border-radius:13px;z-index:30;font-size:13.5px;
+    border:1px solid var(--glass-border);opacity:0;pointer-events:none;transition:all .35s ease;box-shadow:0 10px 28px rgba(0,0,0,0.5);}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  .empty{text-align:center;color:var(--text-3);padding:26px 10px;font-size:13px;}
+  .empty .big{font-size:34px;margin-bottom:6px;}
+
+  /* hover animations (pointer devices only) */
+  @media (hover:hover){
+    .nav button{transition:color .25s;}
+    .nav button::before{content:"";position:absolute;inset:5px 5px;border-radius:15px;
+      background:rgba(255,255,255,0);transition:background .25s ease;}
+    .nav button:hover{color:var(--text-2);}
+    .nav button:hover::before{background:rgba(255,255,255,0.08);}
+    .nav button:hover .ico{transform:translateY(-3px) scale(1.16);}
+    .btn:hover{transform:translateY(-2px);filter:brightness(1.08);
+      box-shadow:0 14px 30px rgba(35,158,141,0.45),0 1px 0 rgba(255,255,255,0.4) inset;}
+    .btn.ghost:hover{background:rgba(255,255,255,0.12);border-color:var(--glass-rim);filter:none;
+      box-shadow:0 10px 24px rgba(0,0,0,0.35);}
+    .btn:active{transform:scale(.95) translateY(0);}
+    .chip:hover{background:rgba(255,255,255,0.10);color:var(--text);transform:translateY(-2px);}
+    .chip.sel:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(35,158,141,0.5);}
+    .seg button:hover{background:rgba(255,255,255,0.10);color:var(--text);}
+    .plan:hover{transform:translateY(-3px);
+      box-shadow:0 26px 56px rgba(0,0,0,0.5),0 1px 0 var(--gloss) inset,0 -1px 0 rgba(0,0,0,0.30) inset;
+      border-color:var(--glass-rim);}
+    .task .check{transition:background .25s,border-color .25s,transform .2s ease;}
+    .task .check:hover{transform:scale(1.14);border-color:var(--teal);}
+    .switch:hover{box-shadow:0 0 0 4px var(--teal-dim);}
+    .fab .main:hover{transform:scale(1.09) rotate(0);}
+    .fab.open .main:hover{transform:rotate(135deg) scale(1.07);}
+    .fab .mini:hover{transform:scale(1.1);background:linear-gradient(160deg,#365a72,#1b3d4e);}
+    .fab .mini{transition:transform .2s ease,background .2s ease;}
+    .appbar .avatar:hover{transform:scale(1.08) rotate(6deg);}
+    .appbar .avatar{transition:transform .25s ease;}
+    .sheet .x:hover{color:var(--text);transform:scale(1.15);}
+    .sheet .x{transition:color .2s,transform .2s;}
+  }
+
+  /* tab fade */
+  .tab{display:none;animation:fade .35s ease;}
+  .tab.active{display:flex;flex-direction:column;gap:14px;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .num{display:inline-block;transition:transform .3s ease;font-weight:700;}
+  .num.bump{transform:scale(1.25);}
+</style>
+</head>
+<body data-theme="dark">
+  <div class="stage">
+    <div class="screen">
+      <div class="ambient"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+      <header class="topbar" id="topbar">
+        <div class="statusbar">
+          <span>9:41</span>
+          <span class="pill"><span>●●●</span><span>Wi-Fi</span><span>🔋</span></span>
+        </div>
+        <div class="appbar" id="appbar">
+          <div>
+            <div class="t" id="barTitle">今日</div>
+            <div class="s" id="barSub">人生系统 · LifeOS</div>
+          </div>
+          <div class="avatar">🌱</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="scroll" id="scroll">
+
+          <!-- ===== 今日 ===== -->
+          <section class="tab active" id="tab-home">
+            <div class="glass card row between">
+              <div>
+                <div style="font-size:20px;font-weight:700" id="greet">早上好 👋</div>
+                <div class="muted" id="today"></div>
+              </div>
+              <div class="homeOrb bob" id="homeOrb">
+                <div class="variant on" data-v="dot"><div class="look"><div class="eyes"><div class="heDot"></div><div class="heDot"></div></div></div></div>
+                <div class="variant" data-v="pet"><div class="look"><div class="eyes"><div class="heSquint"></div><div class="heSquint"></div></div></div></div>
+                <div class="variant" data-v="X"><div class="look"><div class="eyes"><div class="heX"></div><div class="heX"></div></div></div></div>
+                <div class="variant" data-v="bean"><div class="look"><div class="eyes"><div class="heBean"></div><div class="heBean"></div></div></div></div>
+              </div>
+            </div>
+
+            <div class="glass card row between">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 120 120" width="92" height="92">
+                  <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#5fe6d4"/><stop offset="1" stop-color="#2f7e8f"/></linearGradient></defs>
+                  <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,0.08)" stroke-width="10" fill="none"/>
+                  <circle class="ring-fg" id="ring" cx="60" cy="60" r="52" stroke="url(#tg)" stroke-width="10"
+                    fill="none" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                    transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="ring-val"><b id="ringNum">0%</b><span>完成度</span></div>
+              </div>
+              <div style="flex:1;padding-left:6px">
+                <div class="muted" style="margin-bottom:8px">今日概览</div>
+                <div class="row" style="gap:18px">
+                  <div><div class="num" id="cRem" style="font-size:22px">5</div><div class="muted" style="font-size:11px">提醒</div></div>
+                  <div><div class="num" id="cPlan" style="font-size:22px">3</div><div class="muted" style="font-size:11px">计划</div></div>
+                  <div><div class="num" id="cDone" style="font-size:22px">0</div><div class="muted" style="font-size:11px">已完成</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass card">
+              <div class="row between" style="margin-bottom:4px"><b>今日提醒</b><span class="muted" id="remCount"></span></div>
+              <div id="remList"></div>
+            </div>
+
+            <div class="glass card">
+              <div class="row between" style="margin-bottom:4px"><b>进行中的计划</b><span class="muted" id="planCount"></span></div>
+              <div id="planListHome"></div>
+            </div>
+          </section>
+
+          <!-- ===== 导入 ===== -->
+          <section class="tab" id="tab-import">
+            <div class="glass card">
+              <div class="row between"><b>导入 AI 输出</b><span class="muted">自动识别 md / txt</span></div>
+              <p class="muted" style="margin:8px 0 0;font-size:13px">把 ChatGPT / Claude 给你的 Markdown 粘贴进来，自动排版美化。</p>
+              <div class="seg" style="margin-top:14px">
+                <button id="btnSample">填入示例</button><button id="btnUpload">上传文件</button><button id="btnClip">剪贴板</button>
+              </div>
+              <input type="file" id="fileIn" accept=".md,.txt" style="display:none"/>
+              <label class="field">粘贴内容</label>
+              <textarea id="mdInput" rows="5" style="width:100%;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--glass-border);border-radius:12px;padding:12px;font-size:13px;font-family:ui-monospace,monospace;resize:vertical" placeholder="在此粘贴 AI 生成的 Markdown…"></textarea>
+              <div class="row" style="margin-top:12px;gap:10px">
+                <button class="btn ghost" id="btnPreview" style="flex:1">美化预览</button>
+                <button class="btn" id="btnSave" style="flex:1">保存为笔记</button>
+              </div>
+            </div>
+            <div class="glass card" id="previewCard" style="display:none">
+              <div class="row between"><b>预览</b><button class="btn ghost" id="btnExtract" style="flex:none;padding:7px 12px;font-size:12.5px">提取任务</button></div>
+              <div id="mdPreview" style="margin-top:10px;font-size:14px;line-height:1.6"></div>
+            </div>
+          </section>
+
+          <!-- ===== 计划 ===== -->
+          <section class="tab" id="tab-plans">
+            <div class="chips" id="filterChips"></div>
+            <div id="planList"></div>
+          </section>
+
+          <!-- ===== 关系 ===== -->
+          <section class="tab" id="tab-relations">
+            <div class="glass card">
+              <b>人生地图</b>
+              <p class="muted" style="margin:6px 0 0;font-size:13px">中心是「人生领域」，周围是你的计划，连线表示归属关系。</p>
+              <div id="relGraph" style="margin-top:8px"></div>
+            </div>
+            <div id="relList"></div>
+          </section>
+
+          <!-- ===== 我的 ===== -->
+          <section class="tab" id="tab-profile">
+            <div class="glass card">
+              <div class="row between">
+                <div><b>通知提醒</b><div class="muted" style="font-size:12px;margin-top:3px">到点弹出本地通知</div></div>
+                <div class="switch" id="notifSwitch"><div class="knob"></div></div>
+              </div>
+              <button class="btn" id="btnNotif" style="width:100%;margin-top:14px">开启通知权限</button>
+            </div>
+            <div class="glass card">
+              <b>外观</b>
+              <div class="seg" style="margin-top:12px">
+                <button id="thmDark" class="sel">深色</button><button id="thmLight">浅色</button>
+              </div>
+            </div>
+            <div class="glass card">
+              <b>数据备份</b>
+              <p class="muted" style="margin:6px 0 0;font-size:13px">数据只存于本机。导出可备份，换机再导入。</p>
+              <div class="row" style="margin-top:12px;gap:10px">
+                <button class="btn ghost" id="btnExport" style="flex:1">导出 JSON</button>
+                <button class="btn ghost" id="btnImport" style="flex:1">导入 JSON</button>
+              </div>
+            </div>
+            <div class="empty"><div class="big">🌱</div>人生系统 v1 · 数据存于本机</div>
+          </section>
+
+        </div>
+
+        <!-- bottom nav -->
+        <nav class="nav glass">
+          <div class="ind" id="navInd"></div>
+          <button class="active" data-screen="home"><span class="ico">🏠</span>今日</button>
+          <button data-screen="import"><span class="ico">📥</span>导入</button>
+          <button data-screen="plans"><span class="ico">🗂️</span>计划</button>
+          <button data-screen="relations"><span class="ico">🕸️</span>关系</button>
+          <button data-screen="profile"><span class="ico">👤</span>我的</button>
+        </nav>
+
+        <!-- FAB -->
+        <div class="fab" id="fab">
+          <div class="act"><span class="lbl">新建任务</span><div class="mini" data-act="task">＋</div></div>
+          <div class="act"><span class="lbl">新建计划</span><div class="mini" data-act="plan">🗂️</div></div>
+          <button class="main" id="fabMain">＋</button>
+        </div>
+
+        <!-- sheet -->
+        <div class="overlay" id="overlay">
+          <div class="sheet" id="sheet">
+            <button class="x" id="sheetX">×</button>
+            <div id="sheetBody"></div>
+          </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- data ---------- */
+const TYPES={
+  reading:{name:"读书",icon:"📚",color:"var(--c-read)"},
+  fitness:{name:"健身",icon:"🏃",color:"var(--c-fit)"},
+  diet:{name:"饮食",icon:"🥗",color:"var(--c-diet)"},
+  custom:{name:"自定义",icon:"⭐",color:"var(--c-custom)"}
+};
+let uid=()=>Math.random().toString(36).slice(2,9);
+const domains=[
+  {id:"d_health",name:"健康",emoji:"💪"},
+  {id:"d_growth",name:"成长",emoji:"📚"},
+  {id:"d_career",name:"事业",emoji:"💼"},
+  {id:"d_life",name:"生活",emoji:"🌿"}
+];
+let plans=[
+  {id:"p_read",name:"读书计划",type:"reading",domainId:"d_growth",tasks:[
+    {id:uid(),title:"读《认知觉醒》30 分钟",done:false,reminder:"21:00"},
+    {id:uid(),title:"写读书笔记 3 条",done:false,reminder:"22:00"}
+  ]},
+  {id:"p_fit",name:"健身计划",type:"fitness",domainId:"d_health",tasks:[
+    {id:uid(),title:"晨跑 30 分钟",done:false,reminder:"07:00"},
+    {id:uid(),title:"力量训练 20 分钟",done:false,reminder:"19:00"}
+  ]},
+  {id:"p_diet",name:"饮食计划",type:"diet",domainId:"d_health",tasks:[
+    {id:uid(),title:"早餐补充蛋白质",done:false,reminder:"08:00"},
+    {id:uid(),title:"晚餐控制碳水",done:false,reminder:"19:30"}
+  ]}
+];
+let filterType="all";
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
+function bump(el){el.classList.add("bump");setTimeout(()=>el.classList.remove("bump"),300);}
+function openSheet(html){$("#sheetBody").innerHTML=html;$("#overlay").classList.add("show");}
+function closeSheet(){$("#overlay").classList.remove("show");}
+function dom(id){const d=domains.find(x=>x.id===id);return d?d.name:"未分类";}
+// ripple
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".btn, .chip, .seg button, .nav button, .mini");
+  if(!b)return;
+  const r=document.createElement("span");r.className="ripple";
+  const rect=b.getBoundingClientRect();const size=Math.max(rect.width,rect.height);
+  r.style.width=r.style.height=size+"px";
+  r.style.left=(e.clientX-rect.left)+"px";r.style.top=(e.clientY-rect.top)+"px";
+  if(b.classList.contains("btn")){b.appendChild(r);setTimeout(()=>r.remove(),600);}
+});
+
+/* ---------- greeting / date ---------- */
+(function(){
+  const hr=new Date().getHours();
+  $("#greet").textContent=(hr<6?"夜深了，注意休息":hr<11?"早上好":hr<14?"中午好":hr<18?"下午好":"晚上好")+" 👋";
+  $("#today").textContent=new Date().toLocaleDateString("zh-CN",{month:"long",day:"numeric",weekday:"long"});
+})();
+
+/* ---------- ring ---------- */
+function setRing(pct){
+  const C=326.7;$("#ring").style.strokeDashoffset=C*(1-pct/100);
+  // animate number
+  let cur=parseInt($("#ringNum").textContent)||0;const step=(pct-cur)/24;let i=0;
+  const t=setInterval(()=>{cur+=step;i++;if(i>=24){cur=pct;clearInterval(t);}$("#ringNum").textContent=Math.round(cur)+"%";},18);
+}
+
+/* ---------- render: home ---------- */
+function allTasks(){const r=[];plans.forEach(p=>p.tasks.forEach(t=>r.push({plan:p,task:t})));return r;}
+function renderHome(){
+  const rem=allTasks().filter(x=>x.task.reminder).sort((a,b)=>a.task.reminder.localeCompare(b.task.reminder));
+  $("#remCount").textContent=rem.length+" 项";
+  $("#remList").innerHTML=rem.map(x=>
+    `<div class="task ${x.task.done?'done':''}" data-p="${x.plan.id}" data-t="${x.task.id}">
+       <div class="check" onclick="toggleTask('${x.plan.id}','${x.task.id}',this)"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+       <div style="flex:1"><div class="tt">${x.task.title}</div>
+         <div class="meta"><span>⏰ ${x.task.reminder}</span><span class="pill2" style="color:${TYPES[x.plan.type].color}">${TYPES[x.plan.type].icon}${x.plan.name}</span></div></div>
+     </div>`).join("");
+  $("#planCount").textContent=plans.length+" 个";
+  $("#planListHome").innerHTML=plans.map(p=>{
+    const done=p.tasks.filter(t=>t.done).length;const total=p.tasks.length||1;
+    return `<div class="glass plan" onclick="openPlanView('${p.id}')">
+      <div class="row between"><div class="row">
+        <div class="ic" style="background:${TYPES[p.type].color}22;color:${TYPES[p.type].color}">${TYPES[p.type].icon}</div>
+        <div><div style="font-weight:600">${p.name}</div><div class="muted" style="font-size:12px">${done}/${p.tasks.length} 完成 · 归属「${dom(p.domainId)}」</div></div>
+      </div><span class="pct">${Math.round(done/total*100)}%</span></div></div>`;
+  }).join("");
+}
+function refreshStats(){
+  const rem=allTasks().filter(x=>x.task.reminder);
+  const done=allTasks().filter(x=>x.task.done).length;
+  const total=allTasks().length||1;
+  bump($("#cRem"));bump($("#cPlan"));bump($("#cDone"));
+  $("#cRem").textContent=rem.length;$("#cPlan").textContent=plans.length;$("#cDone").textContent=done;
+  setRing(Math.round(done/total*100));
+}
+window.toggleTask=function(pid,tid,el){
+  const p=plans.find(x=>x.id===pid);if(!p)return;const t=p.tasks.find(x=>x.id===tid);if(!t)return;
+  t.done=!t.done;
+  el.closest(".task").classList.toggle("done",t.done);
+  refreshStats();renderHome();if(currentTab()==="plans")renderPlans();
+  toast(t.done?"已完成 ✓":"已取消");
+};
+
+/* ---------- render: plans ---------- */
+function renderPlans(){
+  const types=["all","reading","fitness","diet","custom"];
+  $("#filterChips").innerHTML=types.map(t=>`<div class="chip ${filterType===t?'sel':''}" onclick="setFilter('${t}')">${t==='all'?'全部':TYPES[t].icon+TYPES[t].name}</div>`).join("");
+  const list=plans.filter(p=>filterType==="all"||p.type===filterType);
+  $("#planList").innerHTML=list.length?list.map(p=>{
+    const done=p.tasks.filter(t=>t.done).length;
+    return `<div class="glass plan" style="margin-bottom:12px" onclick="openPlanView('${p.id}')">
+      <div class="row between"><div class="row">
+        <div class="ic" style="background:${TYPES[p.type].color}22;color:${TYPES[p.type].color}">${TYPES[p.type].icon}</div>
+        <div><div style="font-weight:700">${p.name}</div><div class="muted" style="font-size:12px">${TYPES[p.type].name} · 归属「${dom(p.domainId)}」</div></div>
+      </div><span class="pill2">${done}/${p.tasks.length}</span></div>
+      <div style="margin-top:6px">
+        ${p.tasks.map(t=>`<div class="task ${t.done?'done':''}" data-p="${p.id}" data-t="${t.id}">
+          <div class="check" onclick="toggleTask('${p.id}','${t.id}',this)"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+          <div style="flex:1"><div class="tt">${t.title}</div>${t.reminder?`<div class="meta">⏰ ${t.reminder}</div>`:''}</div></div>`).join("")}
+      </div></div>`;
+  }).join(""):`<div class="empty"><div class="big">🗂️</div>还没有计划，点右下角 ＋ 新建</div>`;
+}
+window.setFilter=function(t){filterType=t;renderPlans();};
+
+/* ---------- plan view (sheet) ---------- */
+window.openPlanView=function(id){
+  const p=plans.find(x=>x.id===id);if(!p)return;
+  const rows=p.tasks.map(t=>`<div class="task ${t.done?'done':''}" data-p="${p.id}" data-t="${t.id}">
+      <div class="check" onclick="toggleTask('${p.id}','${t.id}',this)"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+      <div style="flex:1"><div class="tt">${t.title}</div>${t.reminder?`<div class="meta">⏰ ${t.reminder}</div>`:''}</div></div>`).join("");
+  openSheet(`<h3>${p.name}</h3>
+    <div class="row" style="margin:6px 0 10px;gap:8px">
+      <span class="pill2" style="color:${TYPES[p.type].color}">${TYPES[p.type].icon}${TYPES[p.type].name}</span>
+      <span class="pill2">${domains.find(d=>d.id===p.domainId)?.emoji||''} 归属「${dom(p.domainId)}」</span></div>
+    <div id="pvTasks">${rows||'<div class="muted">暂无任务</div>'}</div>
+    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeSheet()">关闭</button>`);
+};
+
+/* ---------- relations graph ---------- */
+function renderRelations(){
+  const W=340,H=320,cx=W/2,cy=H/2,R=92;
+  let svg=`<svg class="relgraph" viewBox="0 0 ${W} ${H}">`;
+  domains.forEach((d,di)=>{
+    const a=(di/domains.length)*Math.PI*2-Math.PI/2;
+    const dx=cx+Math.cos(a)*R,dy=cy+Math.sin(a)*R;
+    const ps=plans.filter(p=>p.domainId===d.id);
+    ps.forEach((p,pi)=>{
+      const pr=R+58,aa=(di/domains.length)*Math.PI*2-Math.PI/2+(pi-(ps.length-1)/2)*0.55;
+      const px=cx+Math.cos(aa)*pr,py=cy+Math.sin(aa)*pr;
+      svg+=`<line x1="${dx}" y1="${dy}" x2="${px}" y2="${py}" stroke="${TYPES[p.type].color}" stroke-width="1.5" opacity="0.6" style="animation-delay:${0.15*(di+pi)}s"/>`;
+    });
+  });
+  domains.forEach((d,di)=>{
+    const a=(di/domains.length)*Math.PI*2-Math.PI/2;
+    const dx=cx+Math.cos(a)*R,dy=cy+Math.sin(a)*R;
+    svg+=`<g class="node" style="animation-delay:${0.1*di}s"><circle cx="${dx}" cy="${dy}" r="30" fill="rgba(20,36,52,0.85)" stroke="${getC(d.id)}" stroke-width="2"/>
+      <text x="${dx}" y="${dy+6}" text-anchor="middle" font-size="22">${d.emoji}</text>
+      <text x="${dx}" y="${dy+46}" text-anchor="middle" font-size="12" fill="var(--text)">${d.name}</text></g>`;
+  });
+  domains.forEach((d,di)=>{
+    const ps=plans.filter(p=>p.domainId===d.id);
+    ps.forEach((p,pi)=>{
+      const pr=R+58,aa=(di/domains.length)*Math.PI*2-Math.PI/2+(pi-(ps.length-1)/2)*0.55;
+      const px=cx+Math.cos(aa)*pr,py=cy+Math.sin(aa)*pr;
+      svg+=`<g class="node" style="animation-delay:${0.25+0.12*(di+pi)}s"><circle cx="${px}" cy="${py}" r="19" fill="${TYPES[p.type].color}" opacity="0.2" stroke="${TYPES[p.type].color}" stroke-width="1.5"/>
+        <text x="${px}" y="${py+5}" text-anchor="middle" font-size="13">${TYPES[p.type].icon}</text></g>`;
+    });
+  });
+  svg+=`</svg>`;
+  $("#relGraph").innerHTML=svg;
+  $("#relList").innerHTML=domains.map(d=>{
+    const ps=plans.filter(p=>p.domainId===d.id);
+    return `<div class="glass card"><div class="row"><span style="font-size:22px">${d.emoji}</span>
+      <div style="flex:1"><b>${d.name}</b></div><span class="pill2">${ps.length} 计划</span></div>
+      ${ps.length?ps.map(p=>`<div class="pill2" style="margin-top:8px;color:${TYPES[p.type].color};border-color:${TYPES[p.type].color}55">${TYPES[p.type].icon}${p.name}</div>`).join(""):'<div class="muted" style="font-size:12px;margin-top:8px">暂无计划归属此领域</div>'}</div>`;
+  }).join("");
+}
+function getC(id){const p=plans.find(x=>x.domainId===id);return p?TYPES[p.type].color:"var(--teal)";}
+
+/* ---------- import ---------- */
+const SAMPLE="# 我的 2026 春季成长方案（AI 生成）\n\n> 由 AI 梳理的 Markdown 示例，粘贴即可美化。\n\n## 读书计划\n- [ ] 每周读完 1 本书并写 3 条笔记\n- [x] 建立读书卡片库\n\n## 健身计划\n1. 周一/三/五：力量训练 40 分钟\n2. 周二/四：慢跑 5 公里";
+$("#btnSample").onclick=()=>{$("#mdInput").value=SAMPLE;toast("已填入示例，点「美化预览」");};
+$("#btnUpload").onclick=()=>$("#fileIn").click();
+$("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("#mdInput").value=r.result;$("#btnPreview").click();};r.readAsText(f);};
+$("#btnClip").onclick=()=>{navigator.clipboard?.readText?.().then(t=>{if(t){$("#mdInput").value=t;$("#btnPreview").click();}else toast("剪贴板为空");}).catch(()=>toast("无法读取剪贴板"));};
+$("#btnPreview").onclick=()=>{
+  const md=$("#mdInput").value.trim();if(!md){toast("先粘贴或上传内容");return;}
+  $("#mdPreview").innerHTML=md.replace(/^# (.*)$/gm,"<b style='font-size:17px'>$1</b>")
+    .replace(/^## (.*)$/gm,"<b style='font-size:15px;color:var(--teal)'>$1</b>")
+    .replace(/- \[ \] (.*)/g,"<div class='task'><div class='check'></div><div style='flex:1'>$1</div></div>")
+    .replace(/- \[x\] (.*)/g,"<div class='task done'><div class='check' style='background:var(--teal);border-color:var(--teal)'><svg viewBox='0 0 24 24'><path d='M5 13l4 4L19 7' style='stroke-dashoffset:0'/></svg></div><div style='flex:1'>$1</div></div>")
+    .replace(/^\d+\. (.*)$/gm,"<div style='padding:3px 0'>• $1</div>")
+    .replace(/\n/g,"<br>");
+  $("#previewCard").style.display="block";toast("已美化，可保存或提取任务");
+};
+$("#btnSave").onclick=()=>{if(!$("#mdInput").value.trim()){toast("没有内容可保存");return;}toast("已保存到笔记");};
+$("#btnExtract").onclick=()=>{toast("示例：已提取到「读书计划」");};
+
+/* ---------- profile ---------- */
+let notifOn=false;
+$("#notifSwitch").onclick=function(){this.classList.toggle("on");notifOn=this.classList.contains("on");toast(notifOn?"通知已开启":"通知已关闭");};
+$("#btnNotif").onclick=()=>{notifOn=true;$("#notifSwitch").classList.add("on");toast("通知已开启，到点会提醒你");};
+$("#thmDark").onclick=()=>{document.body.dataset.theme="dark";$("#thmDark").classList.add("sel");$("#thmLight").classList.remove("sel");};
+$("#thmLight").onclick=()=>{document.body.dataset.theme="light";$("#thmLight").classList.add("sel");$("#thmDark").classList.remove("sel");};
+$("#btnExport").onclick=()=>toast("已导出 lifeos-backup.json");
+$("#btnImport").onclick=()=>toast("请选择 JSON 文件");
+
+/* ---------- nav / tabs ---------- */
+const titles={home:["今日","人生系统 · LifeOS"],import:["导入","自动美化 AI 输出"],plans:["计划","读书·健身·饮食·自定义"],relations:["关系","计划之间的联系"],profile:["我的","设置与备份"]};
+function currentTab(){return document.querySelector(".nav button.active").dataset.screen;}
+// position the sliding indicator from real button geometry (no drift)
+function moveInd(btn){
+  const ind=$("#navInd");
+  ind.style.width=btn.offsetWidth+"px";
+  ind.style.transform=`translateX(${btn.offsetLeft}px)`;
+}
+function switchTab(s){
+  $$(".tab").forEach(t=>t.classList.toggle("active",t.id==="tab-"+s));
+  $$(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.screen===s));
+  moveInd(document.querySelector(`.nav button[data-screen="${s}"]`));
+  $("#barTitle").textContent=titles[s][0];$("#barSub").textContent=titles[s][1];
+  $("#fab").classList.toggle("open",false);
+  $("#fab").style.display=(s==="plans"||s==="import")?"flex":"none";
+  if(s==="home"){renderHome();refreshStats();}
+  if(s==="plans")renderPlans();
+  if(s==="relations")renderRelations();
+}
+$$(".nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.screen));
+
+/* ---------- scroll-blur header ---------- */
+const scrollEl=$("#scroll");
+scrollEl.addEventListener("scroll",()=>{
+  $("#topbar").classList.toggle("scrolled",scrollEl.scrollTop>10);
+},{passive:true});
+
+/* ---------- fit phone to window ---------- */
+function fitStage(){
+  const stage=document.querySelector(".stage");
+  const s=Math.min(1,(window.innerHeight-40)/868,(window.innerWidth-40)/398);
+  stage.style.transform=`scale(${s})`;
+}
+window.addEventListener("resize",()=>{fitStage();moveInd(document.querySelector(".nav button.active"));});
+
+/* ---------- FAB ---------- */
+$("#fabMain").onclick=()=>$("#fab").classList.toggle("open");
+$$("#fab .mini").forEach(m=>m.onclick=()=>{
+  $("#fab").classList.remove("open");
+  if(m.dataset.act==="plan")openPlanEditor();
+  else toast("新建任务：选择一个计划");
+});
+
+/* ---------- new plan sheet ---------- */
+function openPlanEditor(){
+  const typeSeg=Object.keys(TYPES).map(k=>`<button data-t="${k}" class="${k==='reading'?'sel':''}" onclick="selType(this,'${k}')">${TYPES[k].icon}${TYPES[k].name}</button>`).join("");
+  const domOpts=domains.map(d=>`<option value="${d.id}">${d.emoji}${d.name}</option>`).join("");
+  openSheet(`<h3>新建计划</h3>
+    <label class="field">名称</label><input id="f_name" placeholder="例如：晨间 routine"/>
+    <label class="field">类型</label><div class="seg" id="f_types" style="margin-top:0">${typeSeg}</div>
+    <label class="field">归属人生领域</label><select id="f_dom">${domOpts}</select>
+    <div class="row" style="margin-top:18px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="f_save">创建</button></div>`);
+  window.selType=function(el,k){$$("#f_types button").forEach(x=>x.classList.remove("sel"));el.classList.add("sel");el.dataset.cur=k;};
+  $("#f_save").onclick=()=>{
+    const name=$("#f_name").value.trim();if(!name){toast("请填写名称");return;}
+    const k=$("#f_types button.sel")?.dataset.t||"reading";
+    plans.push({id:uid(),name,type:k,domainId:$("#f_dom").value,tasks:[]});
+    closeSheet();switchTab("plans");toast("已创建「"+name+"」");
+  };
+}
+$("#sheetX").onclick=closeSheet;
+$("#overlay").onclick=e=>{if(e.target.id==="overlay")closeSheet();};
+
+/* ---------- home interactive orb ---------- */
+(function(){
+  const orb=document.getElementById("homeOrb");
+  if(!orb)return;
+  const animFor={dot:"bob",pet:"sway",X:"bob",bean:"bobC"};
+  let base="dot",petting=false,returnTimer=null;
+  function armReturn(){clearTimeout(returnTimer);returnTimer=setTimeout(()=>{base="dot";petting=false;render();},5000);}
+  function render(){
+    const v=petting?"pet":base;
+    orb.className="homeOrb "+animFor[v];
+    orb.querySelectorAll(".variant").forEach(el=>el.classList.toggle("on",el.dataset.v===v));
+  }
+  function setBase(b){ if(b==="dot")clearTimeout(returnTimer); else armReturn(); base=b; if(petting)petting=false; render(); }
+  function triggerPet(){ petting=true; armReturn(); render(); }
+  function toggleBase(b){ setBase(base===b?"dot":b); }
+  let lastClick=0,clickTimer=null,lpTimer=null,lpFired=false;
+  function onDown(){ lpFired=false; lpTimer=setTimeout(()=>{ lpFired=true; setBase("bean"); },500); }
+  function onUp(){
+    if(lpTimer)clearTimeout(lpTimer);
+    if(lpFired)return;
+    const t=Date.now();
+    if(t-lastClick<300){ if(clickTimer){clearTimeout(clickTimer);clickTimer=null;} lastClick=0; toggleBase("X"); }
+    else { lastClick=t; clickTimer=setTimeout(()=>{ clickTimer=null; lastClick=0; triggerPet(); },300); }
+  }
+  orb.addEventListener("pointerdown",onDown);
+  orb.addEventListener("pointerup",onUp);
+  orb.addEventListener("pointerleave",()=>{ if(lpTimer)clearTimeout(lpTimer); });
+  orb.addEventListener("contextmenu",e=>e.preventDefault());
+  document.addEventListener("mousemove",e=>{
+    const r=orb.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+    const x=Math.max(-4,Math.min(4,dx/26)), y=Math.max(-3,Math.min(3,dy/26));
+    const look=orb.querySelector(".variant.on .look");
+    if(look)look.style.transform=`translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+  });
+  render();
+})();
+
+/* ---------- init ---------- */
+renderHome();refreshStats();
+$("#fab").style.display="none";
+fitStage();
+requestAnimationFrame(()=>moveInd(document.querySelector(".nav button.active")));
+setTimeout(()=>refreshStats(),300); // re-trigger ring anim on load
+</script>
+</body>
+</html>

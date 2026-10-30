@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Glass — Mobile UI</title>
+<style>
+  :root{
+    --bg-0:#070d14;
+    --bg-1:#0c1622;
+    --bg-2:#13202f;
+
+    /* frosted + glossy liquid glass */
+    --glass:rgba(28,46,64,0.42);
+    --glass-strong:rgba(20,36,52,0.55);
+    --glass-border:rgba(168,208,230,0.22);
+    --glass-rim:rgba(190,225,245,0.40);   /* bright refractive edge */
+    --gloss:rgba(255,255,255,0.16);       /* glossy top highlight */
+
+    --teal:#5fe6d4;
+    --teal-dim:rgba(95,230,212,0.16);
+
+    --text:#eef6fb;
+    --text-2:#a9c0cf;
+    --text-3:#74909f;
+
+    --r-lg:32px;
+    --r-md:22px;
+    --r-sm:15px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(120% 120% at 50% -10%, #11202e 0%, var(--bg-0) 62%);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:34px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- phone stage ---------- */
+  .stage{
+    position:relative;width:396px;height:828px;border-radius:54px;padding:14px;
+    background:linear-gradient(160deg,#1b2a39,#0a121b);
+    box-shadow:
+      0 50px 110px rgba(0,0,0,0.6),
+      0 2px 0 rgba(255,255,255,0.06) inset,
+      0 -1px 0 rgba(0,0,0,0.65) inset;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;
+    background:
+      radial-gradient(90% 60% at 80% 4%, #1c3346 0%, rgba(28,51,70,0) 55%),
+      radial-gradient(75% 55% at 10% 12%, #152b3c 0%, rgba(21,43,60,0) 52%),
+      linear-gradient(172deg,var(--bg-2),var(--bg-0));
+  }
+
+  /* soft ambient lighting */
+  .ambient{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .ambient span{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;}
+  .ambient .a1{width:260px;height:260px;top:-60px;right:-50px;
+    background:radial-gradient(circle,rgba(95,230,212,0.26),rgba(95,230,212,0)70%);}
+  .ambient .a2{width:320px;height:320px;bottom:-70px;left:-80px;
+    background:radial-gradient(circle,rgba(74,128,164,0.30),rgba(74,128,164,0)70%);}
+  .ambient .a3{width:200px;height:200px;top:42%;left:52%;
+    background:radial-gradient(circle,rgba(60,108,140,0.24),rgba(60,108,140,0)70%);}
+
+  /* ---------- liquid glass core ---------- */
+  .glass{
+    position:relative;
+    background:var(--glass);
+    backdrop-filter:blur(26px) saturate(135%);
+    -webkit-backdrop-filter:blur(26px) saturate(135%);
+    border:1px solid var(--glass-border);
+    border-radius:var(--r-md);
+    box-shadow:
+      0 22px 50px rgba(0,0,0,0.42),          /* soft diffuse, no harsh shadow */
+      0 1px 0 var(--gloss) inset,           /* glossy top line */
+      0 -1px 0 rgba(0,0,0,0.30) inset;
+    overflow:hidden;
+  }
+  /* refractive rim + frosted sheen */
+  .glass::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:
+      linear-gradient(150deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%),
+      linear-gradient(330deg, var(--teal-dim) 0%, rgba(95,230,212,0) 42%);
+  }
+  /* bright refractive edge highlight */
+  .glass::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    border:1px solid var(--glass-rim);
+    -webkit-mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+            mask:linear-gradient(140deg,#000 0%,transparent 30%,transparent 70%,#000 100%);
+    opacity:.6;
+  }
+
+  /* ---------- content ---------- */
+  .content{position:relative;z-index:2;height:100%;padding:56px 22px 22px;
+    display:flex;flex-direction:column;gap:16px;}
+
+  .statusbar{position:absolute;top:0;left:0;right:0;height:48px;
+    display:flex;align-items:center;justify-content:space-between;padding:0 32px;
+    font-size:14px;font-weight:600;z-index:3;}
+  .statusbar .pill{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text-2);}
+
+  .header{display:flex;align-items:center;justify-content:space-between;}
+  .header .hi{font-size:13px;color:var(--text-2);letter-spacing:.04em;}
+  .header .name{font-size:21px;font-weight:650;margin-top:2px;}
+  .avatar{width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(160deg,#2c4a5e,#13222e);
+    border:1px solid var(--glass-border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--teal);font-size:17px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45),0 1px 0 var(--gloss) inset;}
+
+  /* hero with floating liquid orb */
+  .hero{padding:22px;display:flex;align-items:center;gap:18px;margin-top:2px;}
+  .orb{
+    width:88px;height:88px;border-radius:50%;flex:none;position:relative;
+    background:
+      radial-gradient(60% 60% at 32% 28%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 45%),
+      radial-gradient(120% 120% at 70% 75%, var(--teal) 0%, #2f7e8f 55%, #16323f 100%);
+    box-shadow:
+      0 14px 30px rgba(20,90,90,0.45),
+      0 1px 0 rgba(255,255,255,0.4) inset,
+      0 -8px 18px rgba(0,0,0,0.35) inset;
+  }
+  .orb::after{content:"";position:absolute;top:12px;left:18px;width:30px;height:18px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.7),rgba(255,255,255,0)70%);
+    filter:blur(2px);}
+  .hero .meta .label{font-size:12px;color:var(--text-2);letter-spacing:.05em;text-transform:uppercase;}
+  .hero .meta .big{font-size:26px;font-weight:680;margin-top:3px;}
+  .hero .meta .sub{font-size:13px;color:var(--text-3);margin-top:4px;}
+
+  .seclabel{display:flex;align-items:center;justify-content:space-between;padding:0 4px;margin-top:4px;}
+  .seclabel .t{font-size:14px;font-weight:650;}
+  .seclabel .n{font-size:12px;color:var(--teal);font-weight:600;}
+
+  /* list */
+  .list{display:flex;flex-direction:column;gap:12px;}
+  .item{padding:16px;display:flex;align-items:center;gap:14px;}
+  .item .ic{width:42px;height:42px;border-radius:13px;flex:none;
+    background:linear-gradient(160deg,rgba(95,230,212,0.22),rgba(95,230,212,0.04));
+    border:1px solid rgba(95,230,212,0.34);
+    display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:18px;font-weight:700;
+    box-shadow:0 1px 0 var(--gloss) inset;}
+  .item .tx{flex:1;min-width:0;}
+  .item .tx .t{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item .tx .s{font-size:12.5px;color:var(--text-3);margin-top:3px;}
+  .item .due{font-size:11.5px;color:var(--text-2);
+    background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);
+    padding:5px 10px;border-radius:999px;font-weight:600;flex:none;}
+  .item .due.hot{color:var(--teal);border-color:rgba(95,230,212,0.34);background:var(--teal-dim);}
+
+  .spacer{flex:1;}
+
+  /* bottom nav — glossy pill */
+  .nav{margin-top:auto;padding:12px 14px;display:flex;align-items:center;justify-content:space-around;border-radius:var(--r-lg);}
+  .nav .b{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text-3);font-size:10.5px;font-weight:600;flex:1;}
+  .nav .b .gi{font-size:20px;line-height:1;}
+  .nav .b.active{color:var(--teal);}
+  .nav .b.active .gi{filter:drop-shadow(0 0 9px rgba(95,230,212,0.55));}
+
+  .fab{position:absolute;right:30px;bottom:106px;z-index:4;width:58px;height:58px;border-radius:50%;
+    background:linear-gradient(160deg,var(--teal),#239e8d);
+    display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:300;color:#04231f;
+    box-shadow:0 16px 34px rgba(35,158,141,0.5),0 1px 0 rgba(255,255,255,0.4) inset;}
+
+  /* gentle serene float */
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .orb{animation:float 7s ease-in-out infinite;}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="screen">
+      <div class="ambient"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="pill"><span>●●●</span><span>Wi-Fi</span><span>🔋</span></span>
+      </div>
+
+      <div class="content">
+        <div class="header">
+          <div>
+            <div class="hi">Good evening</div>
+            <div class="name">Lin</div>
+          </div>
+          <div class="avatar">L</div>
+        </div>
+
+        <div class="glass hero">
+          <div class="orb"></div>
+          <div class="meta">
+            <div class="label">Retention</div>
+            <div class="big">12 due today</div>
+            <div class="sub">On track — keep the rhythm</div>
+          </div>
+        </div>
+
+        <div class="seclabel">
+          <span class="t">Due for review</span>
+          <span class="n">4 urgent</span>
+        </div>
+
+        <div class="list">
+          <div class="glass item">
+            <div class="ic">あ</div>
+            <div class="tx"><div class="t">Japanese · Core verbs</div><div class="s">48 cards · last seen 3d ago</div></div>
+            <div class="due hot">now</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">∑</div>
+            <div class="tx"><div class="t">Linear Algebra · Eigen</div><div class="s">32 cards · last seen 2d ago</div></div>
+            <div class="due hot">10m</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">📖</div>
+            <div class="tx"><div class="t">Product Spec notes</div><div class="s">21 cards · last seen 1d ago</div></div>
+            <div class="due">1h</div>
+          </div>
+          <div class="glass item">
+            <div class="ic">FR</div>
+            <div class="tx"><div class="t">French · Travel</div><div class="s">40 cards · last seen 6h ago</div></div>
+            <div class="due">3h</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="glass nav">
+          <div class="b active"><span class="gi">◉</span>Today</div>
+          <div class="b"><span class="gi">⊞</span>Decks</div>
+          <div class="b"><span class="gi">⌕</span>Discover</div>
+          <div class="b"><span class="gi">⚙</span>Settings</div>
+        </div>
+      </div>
+
+      <div class="fab">+</div>
+    </div>
+  </div>
+</body>
+</html>

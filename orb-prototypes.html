@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LifeOS 智能球 · 交互 Prototype</title>
+<style>
+  :root{
+    --bg-0:#070d14; --glass:rgba(28,46,64,0.42);
+    --glass-border:rgba(168,208,230,0.22);
+    --gloss:rgba(255,255,255,0.16);
+    --teal:#5fe6d4; --teal-dim:rgba(95,230,212,0.16);
+    --ink:#0c2a30; --text:#eef6fb; --text-2:#a9c0cf; --text-3:#74909f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(120% 120% at 50% -10%, #11202e 0%, var(--bg-0) 62%);
+    color:var(--text);min-height:100vh;padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  h1{font-size:20px;font-weight:700;}
+  .sub{color:var(--text-3);font-size:13px;margin-bottom:22px;text-align:center;max-width:600px;line-height:1.7;}
+  .grid{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;}
+
+  .card{width:255px;padding:26px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;
+    position:relative;background:var(--glass);backdrop-filter:blur(26px) saturate(135%);
+    border:1px solid var(--glass-border);border-radius:26px;
+    box-shadow:0 22px 50px rgba(0,0,0,0.42),0 1px 0 var(--gloss) inset;}
+  .card h2{font-size:15px;}
+  .tag{position:absolute;top:14px;left:16px;font-size:11px;font-weight:700;letter-spacing:1px;
+    color:var(--teal);background:var(--teal-dim);border:1px solid rgba(95,230,212,0.3);padding:3px 9px;border-radius:999px;}
+  .desc{font-size:12px;color:var(--text-2);line-height:1.7;text-align:center;min-height:48px;}
+
+  .stage{width:150px;height:150px;display:flex;align-items:center;justify-content:center;}
+
+  /* ---------- orb body ---------- */
+  .orb{width:128px;height:128px;border-radius:50%;position:relative;
+    background:radial-gradient(60% 60% at 34% 28%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 46%),
+      radial-gradient(125% 125% at 68% 78%, var(--teal) 0%, #2f7e8f 52%, #14313f 100%);
+    box-shadow:0 16px 36px rgba(20,90,90,0.5),0 1px 0 rgba(255,255,255,0.4) inset,0 -10px 22px rgba(0,0,0,0.38) inset;}
+
+  /* eyes: .look(cursor follow) > .eyes(idle wander) > .eye(blink) */
+  .look{position:absolute;top:50%;left:50%;display:flex;justify-content:center;align-items:center;
+    transform:translate(-50%,-50%);transition:transform .25s cubic-bezier(.34,1.4,.5,1);}
+  .eyes{display:flex;gap:26px;align-items:center;animation:wander 7s ease-in-out infinite;}
+  @keyframes wander{0%,100%{transform:translateX(-4px)}50%{transform:translateX(4px)}}
+
+  /* A · 圆点眼 */
+  .orbA{animation:bob 4.2s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.02)}}
+  .eyeDot{width:19px;height:19px;border-radius:50%;background:var(--ink);position:relative;
+    animation:blink 4.6s ease-in-out infinite;transform-origin:center;}
+  .eyeDot::after{content:"";position:absolute;top:3px;left:4px;width:6px;height:6px;border-radius:50%;
+    background:#eafffb;opacity:.9;box-shadow:0 0 5px rgba(234,255,251,.7);}
+  @keyframes blink{0%,86%,100%{transform:scaleY(1)}92%{transform:scaleY(.12)}}
+
+  /* B · 眯眼（直的，不弯） */
+  .orbSquint{animation:sway 4s ease-in-out infinite;cursor:default;}
+  @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+  .eyeSquint{width:24px;height:4px;border-radius:3px;background:var(--ink);
+    animation:squintPulse 3.4s ease-in-out infinite;transform-origin:center;}
+  @keyframes squintPulse{0%,100%{transform:scaleY(1)}50%{transform:scaleY(2.2)}}
+
+  /* 叉叉眼 */
+  .orbX{animation:bob 4.2s ease-in-out infinite;}
+  .eyeX{width:22px;height:22px;position:relative;animation:wigX 2.8s ease-in-out infinite;transform-origin:center;}
+  .eyeX::before,.eyeX::after{content:"";position:absolute;top:50%;left:50%;width:21px;height:3.6px;border-radius:3px;
+    background:var(--ink);transform-origin:center;}
+  .eyeX::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .eyeX::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  @keyframes wigX{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+
+  /* 豆豆眼 */
+  .orbBean{animation:bobC 4.6s ease-in-out infinite;}
+  @keyframes bobC{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .eyeBean{width:16px;height:26px;border-radius:11px;background:var(--ink);transform-origin:center;
+    animation:blinkBean 3.9s cubic-bezier(.5,1.7,.45,1) infinite;}
+  @keyframes blinkBean{0%,78%,100%{transform:scaleY(1)}86%{transform:scaleY(.12)}92%{transform:scaleY(1.22)}}
+
+  /* ---------- interactive live orb ---------- */
+  .demo{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .liveWrap{position:relative;padding:18px;border-radius:34px;background:var(--glass);
+    border:1px solid var(--glass-border);backdrop-filter:blur(26px) saturate(135%);
+    box-shadow:0 22px 50px rgba(0,0,0,0.42),0 1px 0 var(--gloss) inset;}
+  .liveOrb{width:172px;height:172px;display:flex;align-items:center;justify-content:center;position:relative;
+    border-radius:50%;background:radial-gradient(60% 60% at 34% 28%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 46%),
+      radial-gradient(125% 125% at 68% 78%, var(--teal) 0%, #2f7e8f 52%, #14313f 100%);
+    box-shadow:0 18px 40px rgba(20,90,90,0.5),0 1px 0 rgba(255,255,255,0.4) inset,0 -10px 22px rgba(0,0,0,0.38) inset;
+    cursor:pointer;user-select:none;touch-action:none;outline:none;}
+  .variant{display:none;width:0;height:0;position:absolute;top:50%;left:50%;}
+  .variant.on{display:block;}
+  .liveOrb.bob{animation:bob 4.2s ease-in-out infinite;}
+  .liveOrb.sway{animation:sway 4s ease-in-out infinite;}
+  .liveOrb.bobC{animation:bobC 4.6s ease-in-out infinite;}
+
+  .hints{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:520px;}
+  .hint{padding:8px 13px;border-radius:12px;font-size:12.5px;background:rgba(255,255,255,0.06);
+    border:1px solid var(--glass-border);color:var(--text-2);}
+  .hint b{color:var(--teal);}
+  .state{font-size:14px;color:var(--text);min-height:20px;font-weight:600;}
+  .state em{color:var(--teal);font-style:normal;}
+</style>
+</head>
+<body>
+  <h1>智能球 · 交互 Prototype</h1>
+  <div class="sub">平时是<b>圆点眼</b>（眨眼+跟随）。试试点下面的球：<b>单击=抚摸（眯眼+左右摇）</b>、<b>双击=叉叉眼</b>、<b>长按=豆豆眼</b>。所有触发态 <b>5 秒后自动回到圆点眼</b>。</div>
+
+  <div class="grid">
+    <div class="card"><span class="tag">默认</span>
+      <div class="stage"><div class="orb orbA"><div class="look"><div class="eyes"><div class="eyeDot"></div><div class="eyeDot"></div></div></div></div></div>
+      <h2>圆点眼</h2><div class="desc">常态。定时眨眼、左右张望、轻轻浮动，并跟随鼠标。</div>
+    </div>
+    <div class="card"><span class="tag">单击</span>
+      <div class="stage"><div class="orb orbSquint"><div class="look"><div class="eyes"><div class="eyeSquint"></div><div class="eyeSquint"></div></div></div></div></div>
+      <h2>眯眼（抚摸）</h2><div class="desc">单击触发：眼睛眯成直条，整颗球左右摇摆，像被摸头很满足。</div>
+    </div>
+    <div class="card"><span class="tag">双击</span>
+      <div class="stage"><div class="orb orbX"><div class="look"><div class="eyes"><div class="eyeX"></div><div class="eyeX"></div></div></div></div></div>
+      <h2>叉叉眼</h2><div class="desc">双击触发并保留：俏皮的小 ×，轻轻晃。再双击一次可关掉。</div>
+    </div>
+    <div class="card"><span class="tag">长按</span>
+      <div class="stage"><div class="orb orbBean"><div class="look"><div class="eyes"><div class="eyeBean"></div><div class="eyeBean"></div></div></div></div></div>
+      <h2>豆豆眼</h2><div class="desc">长按触发：竖豆豆弹性眨眼，整颗球轻晃。再长按一次可关掉。</div>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="liveWrap">
+      <div class="liveOrb bob" id="liveOrb">
+        <div class="variant on" data-v="dot"><div class="look"><div class="eyes"><div class="eyeDot"></div><div class="eyeDot"></div></div></div></div>
+        <div class="variant" data-v="pet"><div class="look"><div class="eyes"><div class="eyeSquint"></div><div class="eyeSquint"></div></div></div></div>
+        <div class="variant" data-v="X"><div class="look"><div class="eyes"><div class="eyeX"></div><div class="eyeX"></div></div></div></div>
+        <div class="variant" data-v="bean"><div class="look"><div class="eyes"><div class="eyeBean"></div><div class="eyeBean"></div></div></div></div>
+      </div>
+    </div>
+    <div class="state" id="state">当前：<em>圆点眼</em>（常态）</div>
+    <div class="hints">
+      <div class="hint"><b>单击</b> 抚摸 · 眯眼摇摆</div>
+      <div class="hint"><b>双击</b> 叉叉眼（保留）</div>
+      <div class="hint"><b>长按</b> 豆豆眼</div>
+      <div class="hint">再触发同手势 = 回到圆点</div>
+    </div>
+  </div>
+
+<script>
+  const liveOrb=document.getElementById("liveOrb");
+  const stateEl=document.getElementById("state");
+  const animFor={dot:"bob",pet:"sway",X:"bob",bean:"bobC"};
+  const labelFor={dot:"圆点眼（常态）",pet:"眯眼 · 抚摸中",X:"叉叉眼",bean:"豆豆眼"};
+
+  let base="dot", petting=false, returnTimer=null;
+
+  // 任意触发态 5 秒后自动回归原点眼（圆点）
+  function armReturn(){ clearTimeout(returnTimer); returnTimer=setTimeout(()=>{ base="dot"; petting=false; render(); },5000); }
+
+  function render(){
+    const v=petting?"pet":base;
+    liveOrb.className="liveOrb "+animFor[v];
+    liveOrb.querySelectorAll(".variant").forEach(el=>el.classList.toggle("on",el.dataset.v===v));
+    stateEl.innerHTML="当前：<em>"+(petting?"眯眼 · 抚摸中":labelFor[base])+"</em>";
+  }
+  function setBase(b){
+    if(b==="dot"){ clearTimeout(returnTimer); }
+    else { armReturn(); }
+    base=b; if(petting)petting=false; render();
+  }
+  function triggerPet(){ petting=true; armReturn(); render(); }
+  function toggleBase(b){ setBase(base===b?"dot":b); }
+
+  /* ----- gesture detection (mouse + touch) ----- */
+  let lastClick=0, clickTimer=null, lpTimer=null, lpFired=false;
+  function onDown(){
+    lpFired=false;
+    lpTimer=setTimeout(()=>{ lpFired=true; setBase("bean"); },500);
+  }
+  function onUp(){
+    if(lpTimer)clearTimeout(lpTimer);
+    if(lpFired) return;                 // long-press already handled
+    const t=Date.now();
+    if(t-lastClick<300){                // double click
+      if(clickTimer){clearTimeout(clickTimer);clickTimer=null;}
+      lastClick=0; toggleBase("X");
+    } else {                            // potential single click
+      lastClick=t;
+      clickTimer=setTimeout(()=>{ clickTimer=null; lastClick=0; triggerPet(); },300);
+    }
+  }
+  liveOrb.addEventListener("pointerdown",onDown);
+  liveOrb.addEventListener("pointerup",onUp);
+  liveOrb.addEventListener("pointerleave",()=>{ if(lpTimer)clearTimeout(lpTimer); });
+  liveOrb.addEventListener("contextmenu",e=>e.preventDefault());
+
+  /* eyes follow cursor (only the visible variant) */
+  document.addEventListener("mousemove",e=>{
+    const r=liveOrb.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+    const x=Math.max(-6,Math.min(6,dx/26)), y=Math.max(-5,Math.min(5,dy/26));
+    const look=liveOrb.querySelector(".variant.on .look");
+    if(look) look.style.transform=`translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+  });
+
+  render();
+</script>
+</body>
+</html>

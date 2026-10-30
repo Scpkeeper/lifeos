@@ -1,0 +1,21 @@
+{
+  "name": "lifeos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "人生系统 LifeOS - 安卓手机版人生管理应用",
+  "scripts": {
+    "copy": "node -e \"require('fs').copyFileSync('index.html','www/index.html')\"",
+    "sync": "npm run copy && npx cap sync",
+    "android": "npm run sync && npx cap open android"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/clipboard": "^6.0.0",
+    "@capacitor/local-notifications": "^6.1.0"
+  }
+}

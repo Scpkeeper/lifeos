@@ -1,0 +1,16 @@
+# Node
+node_modules/
+
+# Android build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/**/build/
+*.apk
+
+# OS
+.DS_Store
+
+# Local project data (not part of source)
+.workbuddy/
