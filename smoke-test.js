@@ -174,6 +174,70 @@ setTimeout(() => {
   catch(e){ exportThrew = true; errors.push('export threw: '+e.message); }
   ok('export no throw', !exportThrew);
 
+  // ---- 10. todos data model + plan aggregate + voice AI ----
+  const L = window.LifeOS;
+  const D = L.data;
+  ok('todos seeded', Array.isArray(D.todos) && D.todos.length >= 4, 'n='+D.todos.length);
+  const pfit = D.plans.find(p=>p.id==='p_fit');
+  const prog0 = L.planProgress(pfit);
+  ok('planProgress 0..100', typeof prog0==='number' && prog0>=0 && prog0<=100, 'p_fit='+prog0);
+  const tfit = D.todos.find(t=>t.id==='t_fit1'); tfit.done = true;
+  ok('planProgress rises when linked todo done', L.planProgress(pfit) > prog0, 'after='+L.planProgress(pfit));
+  tfit.done = false;
+  ok('overallProgress number', typeof L.overallProgress()==='number');
+  ok('repLabel daily', L.repLabel({type:'daily'})==='🔁 每天');
+  ok('repLabel weekly', /每/.test(L.repLabel({type:'weekly',weekdays:[1,3,5]})));
+  const ap = L.aiParseTodo('每天晚上记录今日体重，归属高蛋白饮食');
+  ok('aiParseTodo -> p_diet', ap.planId==='p_diet', 'pid='+ap.planId);
+  ok('aiParseTodo -> daily', ap.rep.type==='daily');
+  L.renderTodos();
+  ok('todoList rendered rows', (document.getElementById('todoList').innerHTML.match(/class="todo/g)||[]).length >= 4);
+  const navBtns=[...document.querySelectorAll('#nav button')].map(b=>b.dataset.screen);
+  ok('nav has todo tab', navBtns.includes('todo'));
+  ok('nav has no profile tab', !navBtns.includes('profile'), navBtns.join(','));
+  ok('nav 5 buttons', navBtns.length===5, 'n='+navBtns.length);
+  L.switchTo('todo');
+  ok('switchTo todo activates screen', document.getElementById('screen-todo').classList.contains('active'));
+  L.switchTo('profile');
+  ok('avatar morph open on profile', document.getElementById('barAvatar').classList.contains('open'));
+  L.switchTo('home');
+  const before = D.todos.length;
+  L.openTodoEditor(null);
+  const tTitle=document.getElementById('tTitle');
+  ok('todo editor opened', !!tTitle);
+  if(tTitle){ tTitle.value='测试待办项'; document.getElementById('tSaveTodo').dispatchEvent(new window.MouseEvent('click',{bubbles:true})); }
+  ok('todo editor added todo', D.todos.length===before+1, 'now='+D.todos.length);
+  const beforeV = D.todos.length;
+  const vt=document.getElementById('voiceText'); vt.value='每周一三五去健身房';
+  document.getElementById('voiceConfirm').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+  ok('voice confirm added todo', D.todos.length===beforeV+1, 'now='+D.todos.length);
+
+  // ---- 11. 今日提醒进度条 + FAB 顺序 + 待办整行可点 ----
+  // 11a. reminder progress bar updates when a reminder task is done
+  const remTask = (function(){ for(const p of L.data.plans){ for(const t of p.tasks){ if(t.reminder) return t; } } return null; })();
+  ok('seed has a reminder task', !!remTask);
+  if(remTask){
+    remTask.done = true; L.renderHome();
+    const bar = document.getElementById('homeRemBar');
+    const w = parseFloat((bar.style.width||'0').replace('%',''));
+    ok('reminder progress bar has width > 0 after done', w>0, 'width='+(bar.style.width||'none'));
+    ok('reminder count shows done/total', /完成/.test(document.getElementById('homeRemCount').textContent));
+    remTask.done = false; L.renderHome();
+  }
+  // 11b. FAB chips: voice AI at the bottom (last)
+  const chips=[...document.querySelectorAll('#fabChips button')];
+  ok('fab has 3 chips', chips.length===3, 'n='+chips.length);
+  ok('voice AI chip is at bottom', chips[chips.length-1].id==='fabVoice', chips.map(c=>c.id).join(','));
+  // 11c. whole todo row is clickable (not just the tiny box)
+  L.renderTodos();
+  const row=document.querySelector('#todoList .todo');
+  ok('todo row rendered with data-todo', !!row && !!row.dataset.todo);
+  if(row){
+    const tid=row.dataset.todo; const before=L.data.todos.find(t=>t.id===tid).done;
+    row.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+    ok('clicking whole todo row toggles done', L.data.todos.find(t=>t.id===tid).done!==before);
+  }
+
   console.log('\n===== SMOKE TEST RESULTS =====');
   results.forEach(r=>console.log(r));
   console.log('\n===== ERRORS ('+errors.length+') =====');
