@@ -459,6 +459,8 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
 .voice.cancel .vstatus{color:#ff8a7a;}
 .voice.send .vstatus{color:var(--teal);}
 @keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(95,230,212,.5);}70%{box-shadow:0 0 0 22px rgba(95,230,212,0);}100%{box-shadow:0 0 0 0 rgba(95,230,212,0);}}
+.voice .vprog{width:100%;height:5px;border-radius:4px;background:var(--glass-2);overflow:hidden;margin-top:2px;}
+.voice .vprog-bar{height:100%;width:0;background:linear-gradient(90deg,var(--teal),#7af0e2);transition:width .2s;}
 </style>
 </head>
 <body data-page-node-id="eESD9ix0UuRHOSq2xcXiiL" style="">
@@ -620,12 +622,13 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
         <div class="vclose" data-close-voice>✕</div>
         <div class="vc-head">
           <div class="ttl">语音 AI 自动创建</div>
-          <div class="tag">🧠 端侧大模型 · 不上传云端</div>
+          <div class="tag">🧠 端侧 Whisper · 离线语音识别</div>
         </div>
         <div class="vc-mid">
           <textarea id="voiceText" placeholder="点击底部麦克风开始说话，识别结果将显示在这里…"></textarea>
         </div>
-        <div class="vstatus" id="voiceStatus">点击底部麦克风开始说话</div>
+        <div class="vstatus" id="voiceStatus">长按底部麦克风开始说话</div>
+        <div class="vprog" id="voiceProg" style="display:none"><div class="vprog-bar" id="voiceProgBar"></div></div>
         <div class="vc-bottom">
           <button class="confirm" id="voiceConfirm" disabled>确认创建</button>
           <div class="mic-wrap">
@@ -1436,7 +1439,8 @@ $("#aiAuto").querySelectorAll("button").forEach(b=>b.onclick=()=>{data.ai.auto=b
 window.LifeOS={get data(){return data;},AIHub:AIHub,applyAI:applyAI,renderRelations:renderRelations,openAIReview:openAIReview,
   renderTodos:renderTodos,openTodoEditor:openTodoEditor,aiParseTodo:aiParseTodo,repLabel:repLabel,
   planProgress:planProgress,planTodos:planTodos,overallProgress:overallProgress,switchTo:switchTo,
-  renderHome:renderHome,renderPlans:renderPlans};
+  renderHome:renderHome,renderPlans:renderPlans,
+  loadWhisper:loadWhisper,transcribeViaWhisper:transcribeViaWhisper,startRec:startRec,stopRec:stopRec,recordThenTranscribe:recordThenTranscribe};
 
 
 /* ============ 待办（可归属计划） ============ */
@@ -1510,22 +1514,39 @@ function aiParseTodo(text){
   else if(/一直|长期|习惯/.test(t))rep={type:'forever'};
   return {title:t,planId,rep,done:false,due:''};
 }
+/* ===== 语音：端侧 Whisper 转写 + 微信式长按手势 ===== */
 const voice=document.getElementById('voice');let voiceState='idle';
 const voiceStatus=document.getElementById('voiceStatus');const voiceConfirm=document.getElementById('voiceConfirm');
-function openVoice(){voiceState='idle';voice.classList.remove('listening');voiceStatus.textContent='点击底部麦克风开始说话';document.getElementById('voiceText').value='';voiceConfirm.disabled=true;voice.classList.add('show');}
-function closeVoice(){voice.classList.remove('show');voice.classList.remove('listening');}
-voice.querySelectorAll('[data-close-voice]').forEach(x=>x.addEventListener('click',closeVoice));
-/* 微信式长按说话：上滑/左滑=发送，右滑=取消 */
+const voiceHint=document.getElementById('voiceHint');const voiceProg=document.getElementById('voiceProg');const voiceProgBar=document.getElementById('voiceProgBar');
+function openVoice(){voiceState='idle';voice.classList.remove('listening','send','cancel');voiceStatus.textContent='长按底部麦克风开始说话';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';document.getElementById('voiceText').value='';voiceConfirm.disabled=true;if(voiceProg)voiceProg.style.display='none';voice.classList.add('show');}
+function closeVoice(){voice.classList.remove('show');voice.classList.remove('listening','send','cancel');if(recMR&&recMR.state!=='inactive'){try{recMR.stop();}catch(e){}}}
+
+/* ---- 端侧 Whisper（transformers.js WASM，离线，支持中文） ---- */
+const WHISPER_MODEL='Xenova/whisper-tiny';
+let whisperPipe=null,whisperLoading=false;
+function whisperProgress(p){ if(!voiceProg)return; if(p&&p.status==='progress'&&typeof p.progress==='number'){voiceProg.style.display='block';voiceProgBar.style.width=Math.round(p.progress*100)+'%';} else if(p&&(p.status==='ready'||p.status==='done')){voiceProg.style.display='none';} }
+async function loadWhisper(){ if(whisperPipe)return whisperPipe; if(whisperLoading)return null; whisperLoading=true; try{ const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3'); const {pipeline}=mod; whisperPipe=await pipeline('automatic-speech-recognition',WHISPER_MODEL,{device:'wasm',dtype:'q8',chunk_length_s:30,stride_length_s:5,progress_callback:whisperProgress}); return whisperPipe; }catch(e){ console.error('loadWhisper failed',e); whisperLoading=false; throw e; } }
+async function resampleTo16k(ab){ const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext; const off=new OC(1,Math.max(1,Math.ceil(ab.duration*16000)),16000); const s=off.createBufferSource(); s.buffer=ab; s.connect(off.destination); s.start(); const r=await off.startRendering(); return r.getChannelData(0); }
+async function transcribeViaWhisper(blob){ const arr=await blob.arrayBuffer(); const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC(); const buf=await ac.decodeAudioData(arr.slice(0)); const f32=await resampleTo16k(buf); if(ac.close)ac.close(); const pipe=await loadWhisper(); const out=await pipe(f32,{sampling_rate:16000,language:'zh',task:'transcribe',return_timestamps:false}); return (out&&out.text)||''; }
+
+/* ---- 麦克风录音（MediaRecorder → Blob） ---- */
+let recStream=null,recMR=null,recChunks=[];
+function pickMime(){ const c=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']; for(const m of c){ if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m; } return ''; }
+async function startRec(){ recChunks=[]; recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}}); const MR=window.MediaRecorder; recMR=new MR(recStream,{mimeType:pickMime()}); recMR.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; recMR.start(); }
+function stopRec(){ return new Promise(res=>{ if(!recMR){res(null);return;} const mr=recMR; mr.onstop=()=>{ const blob=new Blob(recChunks,{type:mr.mimeType||'audio/webm'}); recChunks=[]; if(recStream)recStream.getTracks().forEach(t=>t.stop()); res(blob); }; if(mr.state!=='inactive')mr.stop(); else res(null); }); }
+async function recordThenTranscribe(){ const blob=await stopRec(); if(!blob)throw new Error('无录音数据'); return await transcribeViaWhisper(blob); }
+
+/* ---- 微信式长按：上滑/左滑=发送，右滑=取消 ---- */
 const voiceGo=document.getElementById('voiceGo');
-const voiceHint=document.getElementById('voiceHint');
-let vHold=false,vMode='neutral',vFillTimer=null,vDownT=0,vStartPt=null,vMoved=false;
+let vHold=false,vMode='neutral',vDownT=0,vStartPt=null,vMoved=false,vLoadP=null;
 const vPt=e=>{const t=(e.touches&&e.touches[0])||e;return{x:t.clientX,y:t.clientY};};
-function vFill(){const ta=document.getElementById('voiceText');if(!ta.value.trim()){ta.value='每天晚上记录今日体重，归属高蛋白饮食';voiceStatus.textContent='已识别，松开发送';voiceConfirm.disabled=false;}}
-function vBegin(){
+async function vBegin(){
   if(voiceState==='done')return;
   voiceState='listening';voice.classList.add('listening');voice.classList.remove('send','cancel');vMode='neutral';
   voiceStatus.textContent='聆听中…（上滑/左滑发送，右滑取消）';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';
-  clearTimeout(vFillTimer);vFillTimer=setTimeout(vFill,1200);
+  if(voiceProg)voiceProg.style.display='none';
+  vLoadP=loadWhisper().catch(e=>{console.warn('whisper preload skipped',e);}); /* 提前预热模型 */
+  try{ await startRec(); }catch(e){ voiceStatus.textContent='无法访问麦克风：'+(e&&e.message||e); voiceHint.textContent='请检查麦克风权限'; voiceState='idle'; }
 }
 function vMove(e){
   if(!vHold)return;const p=vPt(e);const dx=p.x-vStartPt.x,dy=p.y-vStartPt.y;
@@ -1535,18 +1556,18 @@ function vMove(e){
   else{vMode='neutral';voice.classList.remove('send','cancel');voiceStatus.textContent='聆听中…（上滑/左滑发送，右滑取消）';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';}
   if(e.cancelable)e.preventDefault();
 }
-function vEnd(){
-  if(!vHold)return;vHold=false;clearTimeout(vFillTimer);
-  const held=Date.now()-vDownT;
-  if(vMode==='cancel'){voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已取消';voiceState='idle';voiceConfirm.disabled=true;document.getElementById('voiceText').value='';setTimeout(closeVoice,280);return;}
-  if(held<700&&!vMoved){/* 轻点：填好文本，交给定制「确认创建」 */
-    const ta=document.getElementById('voiceText');ta.value='每天晚上记录今日体重，归属高蛋白饮食';
-    voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已识别，点击「确认创建」';voiceState='done';voiceConfirm.disabled=false;return;}
-  /* 发送 */
-  const ta=document.getElementById('voiceText');if(!ta.value.trim())ta.value='每天晚上记录今日体重，归属高蛋白饮食';
-  voice.classList.remove('listening','send','cancel');
-  const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});
-  voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧模型创建待办');
+async function vEnd(){
+  if(!vHold)return;vHold=false;
+  if(vMode==='cancel'){ try{await stopRec();}catch(e){} voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已取消';voiceState='idle';voiceConfirm.disabled=true;document.getElementById('voiceText').value='';setTimeout(closeVoice,280);return; }
+  /* 发送 / 中性释放：录音 → 端侧 Whisper 转写 */
+  voiceStatus.textContent='转写中…端侧 Whisper 识别中';voiceHint.textContent='⏳ 正在识别语音';
+  let clean='';
+  try{ if(vLoadP)await vLoadP; clean=(await recordThenTranscribe()).trim(); }
+  catch(e){ voiceStatus.textContent='语音识别失败：'+(e&&e.message||e); voiceHint.textContent='可重试，或手动输入'; voiceConfirm.disabled=true; return; }
+  if(!clean){ voiceStatus.textContent='未识别到内容，请重试或手动输入'; voiceHint.textContent='↑ 松开发送 · 右滑取消'; voiceConfirm.disabled=true; return; }
+  const ta=document.getElementById('voiceText');
+  if(vMode==='send'){ const d=aiParseTodo(clean);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧 Whisper 创建待办'); }
+  else{ ta.value=clean;voiceStatus.textContent='已识别，点击「确认创建」';voiceHint.textContent='↑ 松开发送 · 右滑取消';voiceState='done';voiceConfirm.disabled=false; }
 }
 voiceGo.addEventListener('pointerdown',e=>{vHold=true;vStartPt=vPt(e);vDownT=Date.now();vMoved=false;vBegin();e.preventDefault();});
 window.addEventListener('pointermove',vMove,{passive:false});
@@ -1554,7 +1575,7 @@ window.addEventListener('pointerup',vEnd);
 window.addEventListener('pointercancel',vEnd);
 voiceConfirm.addEventListener('click',()=>{
   const ta=document.getElementById('voiceText');if(!ta.value.trim())return;
-  const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧模型创建待办');
+  const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧 Whisper 创建待办');
 });
 
 /* press feedback works on every device (CSS :active doesn't fire on touch/iOS) */

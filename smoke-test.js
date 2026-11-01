@@ -238,7 +238,16 @@ setTimeout(() => {
     ok('clicking whole todo row toggles done', L.data.todos.find(t=>t.id===tid).done!==before);
   }
 
-  console.log('\n===== SMOKE TEST RESULTS =====');
+    // ===== 12) 端侧 Whisper 语音转写接线 =====
+  ok('loadWhisper exposed', typeof L.loadWhisper==='function');
+  ok('transcribeViaWhisper exposed', typeof L.transcribeViaWhisper==='function');
+  ok('startRec exposed', typeof L.startRec==='function');
+  ok('stopRec exposed', typeof L.stopRec==='function');
+  ok('recordThenTranscribe exposed', typeof L.recordThenTranscribe==='function');
+  ok('voice progress bar present', !!document.getElementById('voiceProgBar'));
+  ok('voice model tag is Whisper', /Whisper/.test(document.querySelector('.voice .tag').textContent));
+
+console.log('\n===== SMOKE TEST RESULTS =====');
   results.forEach(r=>console.log(r));
   console.log('\n===== ERRORS ('+errors.length+') =====');
   errors.forEach(e=>console.log(e));
