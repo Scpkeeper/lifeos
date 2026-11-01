@@ -430,28 +430,35 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
 .wk span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;border:1px solid var(--line);background:var(--glass-2);color:var(--sub);cursor:pointer;}
 .wk span.on{background:var(--teal);color:#04201d;border-color:transparent;font-weight:600;}
 
-/* ===== 语音录入卡（端侧模型） ===== */
-.voice{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s;}
+/* ===== 语音录入卡（端侧模型 · 微信式长按说话） ===== */
+.voice{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
 .voice.show{opacity:1;pointer-events:auto;}
 .voice .scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
-.voice .vc{position:relative;width:88%;max-width:340px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:22px 20px 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px;}
-.voice .vclose{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--sub);font-size:15px;cursor:pointer;background:var(--glass-2);border:1px solid var(--line);z-index:2;}
+.voice .vc{position:relative;width:100%;max-width:480px;background:var(--surface);border:1px solid var(--line);border-radius:26px 26px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom) + 22px);box-shadow:0 -12px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px;transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.3,1);}
+.voice.show .vc{transform:none;}
+.voice .vclose{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--sub);font-size:15px;cursor:pointer;background:var(--glass-2);border:1px solid var(--line);z-index:2;}
 .voice .vclose:active{transform:scale(.9);}
 .voice .vc-head{text-align:center;}
-.voice .vc-head .ttl{font-size:15px;font-weight:600;margin-top:4px;}
+.voice .vc-head .ttl{font-size:15px;font-weight:600;margin-top:2px;}
 .voice .vc-head .tag{font-size:11px;color:var(--teal);margin-top:6px;}
-.voice .vc-mid{flex:1;display:flex;align-items:center;justify-content:center;min-height:104px;}
-.voice textarea{width:100%;height:92px;background:var(--glass-2);border:1px solid var(--line);border-radius:14px;color:var(--text);padding:12px;font-size:14px;resize:none;outline:none;font-family:inherit;text-align:left;line-height:1.5;}
-.voice .vstatus{font-size:13px;color:var(--sub);text-align:center;}
-.voice .vc-bottom{display:flex;align-items:center;gap:14px;justify-content:center;}
-.voice .mic-btn{width:76px;height:76px;border-radius:50%;flex:none;display:grid;place-items:center;cursor:pointer;border:1.5px solid rgba(95,230,212,.6);background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.18), rgba(95,230,212,.32));box-shadow:0 10px 28px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.3);transition:transform .15s;}
-.voice .mic-btn:active{transform:scale(.93);}
-.voice .mic-btn svg{width:34px;height:34px;}
-.voice.listening .mic-btn{animation:voicepulse 1.4s infinite;background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.3), rgba(95,230,212,.55));}
-.voice .confirm{flex:1;max-width:168px;border:0;border-radius:18px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--teal),#7af0e2);color:#04201d;transition:transform .15s, opacity .2s;}
+.voice .vc-mid{flex:1;display:flex;align-items:stretch;justify-content:center;min-height:96px;}
+.voice textarea{width:100%;height:96px;background:var(--glass-2);border:1px solid var(--line);border-radius:14px;color:var(--text);padding:12px;font-size:14px;resize:none;outline:none;font-family:inherit;line-height:1.5;}
+.voice .vstatus{font-size:13px;color:var(--sub);text-align:center;min-height:18px;transition:color .2s;}
+.voice .vc-bottom{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:2px;}
+.voice .confirm{width:min(260px,82%);border:0;border-radius:18px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--teal),#7af0e2);color:#04201d;transition:transform .15s, opacity .2s;box-shadow:0 8px 22px rgba(95,230,212,.28);}
 .voice .confirm:active{transform:scale(.97);}
-.voice .confirm:disabled{opacity:.4;cursor:not-allowed;}
-@keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(95,230,212,.5);}70%{box-shadow:0 0 0 20px rgba(95,230,212,0);}100%{box-shadow:0 0 0 0 rgba(95,230,212,0);}}
+.voice .confirm:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+.voice .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.voice .mic-btn{width:88px;height:88px;border-radius:50%;flex:none;display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;border:1.5px solid rgba(95,230,212,.6);background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.18), rgba(95,230,212,.32));box-shadow:0 10px 28px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.3);transition:transform .15s, background .2s;}
+.voice .mic-btn:active{transform:scale(.93);cursor:grabbing;}
+.voice .mic-btn svg{width:38px;height:38px;}
+.voice .mic-hint{font-size:12px;color:var(--sub);}
+.voice.listening .mic-btn{animation:voicepulse 1.4s infinite;background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.3), rgba(95,230,212,.55));}
+.voice.send .mic-btn{background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.35), rgba(95,230,212,.85));}
+.voice.cancel .mic-btn{background:radial-gradient(circle at 32% 28%, rgba(255,180,170,.35), rgba(240,90,80,.7));border-color:rgba(240,120,110,.8);}
+.voice.cancel .vstatus{color:#ff8a7a;}
+.voice.send .vstatus{color:var(--teal);}
+@keyframes voicepulse{0%{box-shadow:0 0 0 0 rgba(95,230,212,.5);}70%{box-shadow:0 0 0 22px rgba(95,230,212,0);}100%{box-shadow:0 0 0 0 rgba(95,230,212,0);}}
 </style>
 </head>
 <body data-page-node-id="eESD9ix0UuRHOSq2xcXiiL" style="">
@@ -620,14 +627,17 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
         </div>
         <div class="vstatus" id="voiceStatus">点击底部麦克风开始说话</div>
         <div class="vc-bottom">
-          <button class="mic-btn" id="voiceGo" title="点击说话">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#06231f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="3" width="6" height="11" rx="3"/>
-              <path d="M5 11a7 7 0 0 0 14 0"/>
-              <line x1="12" y1="18" x2="12" y2="21"/>
-            </svg>
-          </button>
           <button class="confirm" id="voiceConfirm" disabled>确认创建</button>
+          <div class="mic-wrap">
+            <button class="mic-btn" id="voiceGo" title="长按说话">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#06231f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="3" width="6" height="11" rx="3"/>
+                <path d="M5 11a7 7 0 0 0 14 0"/>
+                <line x1="12" y1="18" x2="12" y2="21"/>
+              </svg>
+            </button>
+            <div class="mic-hint" id="voiceHint">长按说话 · 松开发送</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1505,11 +1515,43 @@ const voiceStatus=document.getElementById('voiceStatus');const voiceConfirm=docu
 function openVoice(){voiceState='idle';voice.classList.remove('listening');voiceStatus.textContent='点击底部麦克风开始说话';document.getElementById('voiceText').value='';voiceConfirm.disabled=true;voice.classList.add('show');}
 function closeVoice(){voice.classList.remove('show');voice.classList.remove('listening');}
 voice.querySelectorAll('[data-close-voice]').forEach(x=>x.addEventListener('click',closeVoice));
-document.getElementById('voiceGo').addEventListener('click',()=>{
-  const ta=document.getElementById('voiceText');
-  if(voiceState==='idle'){voiceState='listening';voice.classList.add('listening');voiceStatus.textContent='聆听中…';
-    setTimeout(()=>{ta.value='每天晚上记录今日体重，归属高蛋白饮食';voice.classList.remove('listening');voiceStatus.textContent='已识别，点击「确认创建」';voiceState='recognized';voiceConfirm.disabled=false;},1300);}
-});
+/* 微信式长按说话：上滑/左滑=发送，右滑=取消 */
+const voiceGo=document.getElementById('voiceGo');
+const voiceHint=document.getElementById('voiceHint');
+let vHold=false,vMode='neutral',vFillTimer=null,vDownT=0,vStartPt=null,vMoved=false;
+const vPt=e=>{const t=(e.touches&&e.touches[0])||e;return{x:t.clientX,y:t.clientY};};
+function vFill(){const ta=document.getElementById('voiceText');if(!ta.value.trim()){ta.value='每天晚上记录今日体重，归属高蛋白饮食';voiceStatus.textContent='已识别，松开发送';voiceConfirm.disabled=false;}}
+function vBegin(){
+  if(voiceState==='done')return;
+  voiceState='listening';voice.classList.add('listening');voice.classList.remove('send','cancel');vMode='neutral';
+  voiceStatus.textContent='聆听中…（上滑/左滑发送，右滑取消）';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';
+  clearTimeout(vFillTimer);vFillTimer=setTimeout(vFill,1200);
+}
+function vMove(e){
+  if(!vHold)return;const p=vPt(e);const dx=p.x-vStartPt.x,dy=p.y-vStartPt.y;
+  if(Math.abs(dx)>8||Math.abs(dy)>8)vMoved=true;
+  if(dx>56){vMode='cancel';voice.classList.add('cancel');voice.classList.remove('send');voiceStatus.textContent='松开取消';voiceHint.textContent='↔ 松开取消';}
+  else if(dy<-46||dx<-46){vMode='send';voice.classList.add('send');voice.classList.remove('cancel');voiceStatus.textContent='松开发送';voiceHint.textContent='↑ 松开发送';}
+  else{vMode='neutral';voice.classList.remove('send','cancel');voiceStatus.textContent='聆听中…（上滑/左滑发送，右滑取消）';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';}
+  if(e.cancelable)e.preventDefault();
+}
+function vEnd(){
+  if(!vHold)return;vHold=false;clearTimeout(vFillTimer);
+  const held=Date.now()-vDownT;
+  if(vMode==='cancel'){voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已取消';voiceState='idle';voiceConfirm.disabled=true;document.getElementById('voiceText').value='';setTimeout(closeVoice,280);return;}
+  if(held<700&&!vMoved){/* 轻点：填好文本，交给定制「确认创建」 */
+    const ta=document.getElementById('voiceText');ta.value='每天晚上记录今日体重，归属高蛋白饮食';
+    voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已识别，点击「确认创建」';voiceState='done';voiceConfirm.disabled=false;return;}
+  /* 发送 */
+  const ta=document.getElementById('voiceText');if(!ta.value.trim())ta.value='每天晚上记录今日体重，归属高蛋白饮食';
+  voice.classList.remove('listening','send','cancel');
+  const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});
+  voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧模型创建待办');
+}
+voiceGo.addEventListener('pointerdown',e=>{vHold=true;vStartPt=vPt(e);vDownT=Date.now();vMoved=false;vBegin();e.preventDefault();});
+window.addEventListener('pointermove',vMove,{passive:false});
+window.addEventListener('pointerup',vEnd);
+window.addEventListener('pointercancel',vEnd);
 voiceConfirm.addEventListener('click',()=>{
   const ta=document.getElementById('voiceText');if(!ta.value.trim())return;
   const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧模型创建待办');

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>微信式长按语音按钮 · 可复用组件</title>
+<!--
+  ============================================================
+  微信式长按语音按钮 · 独立可复用设计 (WeChat-style hold-to-talk)
+  ------------------------------------------------------------
+  使用方式：
+    1) 复制 <style> 中 .wv-* 相关样式
+    2) 复制 HTML 结构：<button class="wv-btn" id="voiceBtn">…</button>
+       + 浮层 #wvSheet / 取消区 #wvCancel
+    3) 复制 <script> 中的 initVoiceButton(btn, { onSend, onCancel })
+  手势：
+    长按说话 → 松开发送
+    上滑 / 左滑 = 发送
+    右滑       = 取消
+  ============================================================
+-->
+<style>
+  :root{
+    --teal:#5fe6d4; --primary:#0f8f86; --surface:#0e1722; --surface-2:#16222f;
+    --line:rgba(255,255,255,.10); --text:#eaf3f5; --sub:#8aa0a8;
+    --danger:#f05a50; --gloss:rgba(255,255,255,.22);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;min-height:100vh;background:radial-gradient(120% 80% at 50% 0%,#10202c,#0a1118 70%);
+    color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:24px;}
+  /* 手机预览框（仅用于演示，组件本身不依赖它） */
+  .phone{width:min(420px,100%);height:760px;max-height:88vh;background:var(--surface);
+    border:1px solid var(--line);border-radius:30px;position:relative;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);display:flex;flex-direction:column;}
+  .phone .bar{height:54px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px;border-bottom:1px solid var(--line);}
+  .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .bubble{align-self:flex-end;max-width:76%;background:linear-gradient(135deg,var(--teal),#7af0e2);color:#04201d;
+    padding:10px 14px;border-radius:16px 16px 4px 16px;font-size:14px;line-height:1.5;word-break:break-word;}
+  .sys{align-self:center;font-size:12px;color:var(--sub);background:rgba(255,255,255,.06);padding:4px 10px;border-radius:999px;}
+
+  /* ============ 可复用组件：微信式长按语音按钮 ============ */
+  .wv-dock{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.25));display:flex;justify-content:center;}
+  .wv-btn{width:200px;height:46px;border-radius:24px;border:1px solid rgba(95,230,212,.5);
+    background:linear-gradient(135deg,rgba(95,230,212,.30),rgba(95,230,212,.14));
+    color:var(--text);font-size:15px;font-weight:600;letter-spacing:1px;cursor:grab;
+    touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .12s,background .2s;
+    display:flex;align-items:center;justify-content:center;gap:8px;}
+  .wv-btn:active{cursor:grabbing;}
+  .wv-btn svg{width:20px;height:20px;}
+  .wv-btn.rec{background:linear-gradient(135deg,rgba(95,230,212,.55),rgba(95,230,212,.3));}
+
+  /* 录音浮层（说话时出现在按钮上方） */
+  .wv-sheet{position:absolute;left:0;right:0;bottom:96px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    pointer-events:none;opacity:0;transform:translateY(8px);transition:.2s;}
+  .wv-sheet.show{opacity:1;transform:none;}
+  .wv-wave{width:120px;height:42px;border-radius:14px;background:rgba(16,28,40,.55);backdrop-filter:blur(20px);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:4px;}
+  .wv-wave i{width:4px;height:10px;border-radius:2px;background:var(--teal);animation:wv 1s infinite ease-in-out;}
+  .wv-wave i:nth-child(2){animation-delay:.15s;height:18px}.wv-wave i:nth-child(3){animation-delay:.3s;height:24px}
+  .wv-wave i:nth-child(4){animation-delay:.45s;height:16px}.wv-wave i:nth-child(5){animation-delay:.6s;height:12px}
+  @keyframes wv{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .wv-tip{font-size:13px;padding:6px 12px;border-radius:999px;background:rgba(16,28,40,.6);
+    border:1px solid var(--line);color:var(--text);transition:background .15s,color .15s;}
+  .wv-tip.send{background:rgba(95,230,212,.85);color:#04201d;}
+  .wv-tip.cancel{background:var(--danger);color:#fff;}
+  /* 右滑取消区 */
+  .wv-cancel{position:absolute;right:18px;bottom:96px;width:84px;height:84px;border-radius:50%;
+    display:grid;place-items:center;color:#fff;font-size:12px;text-align:center;border:2px solid rgba(255,255,255,.25);
+    background:rgba(240,90,80,.25);opacity:0;transition:.2s;}
+  .wv-cancel.show{opacity:1;}
+  .wv-cancel.hot{background:var(--danger);border-color:#fff;}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bar">微信式语音按钮 · 演示</div>
+    <div class="chat" id="chat">
+      <div class="sys">长按下方按钮说话 · 上滑/左滑发送 · 右滑取消</div>
+    </div>
+
+    <!-- 取消区（右滑时出现） -->
+    <div class="wv-cancel" id="wvCancel">松开<br>取消</div>
+    <!-- 录音浮层 -->
+    <div class="wv-sheet" id="wvSheet">
+      <div class="wv-wave"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="wv-tip" id="wvTip">手指上滑，取消发送</div>
+    </div>
+    <!-- 语音按钮（组件本体） -->
+    <div class="wv-dock">
+      <button class="wv-btn" id="voiceBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/>
+        </svg>
+        <span id="wvLabel">按住 说话</span>
+      </button>
+    </div>
+  </div>
+
+<script>
+/* =========================================================
+   微信式长按语音按钮 · 初始化函数（可直接复用到任意项目）
+   参数：
+     btn      : 语音按钮元素
+     options  : { onSend(transcript), onCancel() }
+   手势判定：
+     长按超过 180ms 进入录音；
+     位移 dx>56 且向右 → 取消；
+     位移 dy<-46 或 dx<-46（上/左） → 发送；
+     短按(<180ms 无位移) → 视为点击，仅填充示例文本（不发送）。
+   ========================================================= */
+function initVoiceButton(btn, options){
+  const opt = options || {};
+  const sheet = document.getElementById('wvSheet');
+  const tip   = document.getElementById('wvTip');
+  const cancel= document.getElementById('wvCancel');
+  const label = document.getElementById('wvLabel');
+  let hold=false, mode='neutral', downT=0, start=null, moved=false, fillT=null;
+
+  const pt = e => { const t=(e.touches&&e.touches[0])||e; return {x:t.clientX,y:t.clientY}; };
+  const setMode = m => {
+    mode=m;
+    btn.classList.toggle('rec', m!=='cancel');
+    sheet.classList.toggle('show', m!=='idle');
+    cancel.classList.toggle('show', m!=='idle');
+    if(m==='cancel'){ tip.textContent='松开手指，取消发送'; tip.className='wv-tip cancel'; cancel.classList.add('hot'); }
+    else if(m==='send'){ tip.textContent='松开发送'; tip.className='wv-tip send'; cancel.classList.remove('hot'); }
+    else { tip.textContent='手指上滑，取消发送'; tip.className='wv-tip'; cancel.classList.remove('hot'); }
+  };
+  const begin = () => { setMode('neutral'); clearTimeout(fillT); };
+  const move = e => {
+    if(!hold) return;
+    const p=pt(e), dx=p.x-start.x, dy=p.y-start.y;
+    if(Math.abs(dx)>8||Math.abs(dy)>8) moved=true;
+    if(dx>56) setMode('cancel');
+    else if(dy<-46||dx<-46) setMode('send');
+    else setMode('neutral');
+    if(e.cancelable) e.preventDefault();
+  };
+  const end = () => {
+    if(!hold) return; hold=false; clearTimeout(fillT);
+    const held=Date.now()-downT;
+    if(mode==='cancel'){ setMode('idle'); opt.onCancel && opt.onCancel(); return; }
+    if(held<180 && !moved){ setMode('idle'); opt.onSend && opt.onSend('（示例）每天晚上记录今日体重'); return; }
+    setMode('idle'); opt.onSend && opt.onSend('（示例）每天晚上记录今日体重，归属高蛋白饮食');
+  };
+
+  btn.addEventListener('pointerdown', e=>{ hold=true; start=pt(e); downT=Date.now(); moved=false; begin(); e.preventDefault(); });
+  window.addEventListener('pointermove', move, {passive:false});
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+}
+
+/* 演示：把发送结果渲染成聊天气泡，取消时给系统提示 */
+const chat=document.getElementById('chat');
+initVoiceButton(document.getElementById('voiceBtn'), {
+  onSend(text){ const b=document.createElement('div'); b.className='bubble'; b.textContent=text; chat.appendChild(b); chat.scrollTop=chat.scrollHeight; },
+  onCancel(){ const s=document.createElement('div'); s.className='sys'; s.textContent='已取消发送'; chat.appendChild(s); chat.scrollTop=chat.scrollHeight; }
+});
+</script>
+</body>
+</html>
