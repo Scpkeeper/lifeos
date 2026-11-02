@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>LifeOS · 端侧 AI 原型 (2/4) — 计划结构化</title>
+</head>
+<body>
+<div class="wrap">
+  <div class="card glass">
+    <h1>② 计划结构化 · Plan</h1>
+    <p class="muted">端侧模型把一句话拆成「计划」：判定类型（读书/健身/饮食/自定义）、归属人生领域、生成可执行步骤与频率。<br/>
+      下方关系图按领域聚合，计划节点环绕中心枢纽，关联线自动绘制。</p>
+    <textarea id="in" class="field" placeholder="说一句话">这周把《活着》读完，顺便每天跑步30分钟减肥，再每周一三五练瑜伽</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="run">端侧分析</button>
+      <button class="btn ghost" id="engBtn">切换引擎：端侧大模型</button>
+    </div>
+    <div class="row" id="samples" style="margin-top:8px"></div>
+    <div id="out"></div>
+    <h2 style="margin-top:18px">🕸 人生地图（按领域关联）</h2>
+    <div id="graph" class="glass" style="border-radius:16px;padding:8px"></div>
+  </div>
+  <p class="muted center">原型 2/4 · 计划类型与领域定义与 App 完全一致</p>
+</div>
+<script src="prototype-ai-core.js"></script>
+<script>
+AICore.injectStyles();
+let backend='stub';
+const $=(s)=>document.querySelector(s);
+AICore.SAMPLES.forEach(s=>{const c=document.createElement('span');c.className='chip';c.textContent=s.slice(0,12)+'…';c.onclick=()=>{$('#in').value=s;run();};$('#samples').appendChild(c);});
+function renderGraph(res){
+  const plans=res.plans||[]; const links=res.links||[];
+  const W=680,H=320,cx=W/2,cy=H/2,R=120;
+  let nodes=plans.map((p,i)=>{const a=(-Math.PI/2)+i*(2*Math.PI/Math.max(plans.length,1));return {id:p.id,x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R*0.8,p};});
+  const byId={};nodes.forEach(n=>byId[n.id]=n);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%"><circle cx="${cx}" cy="${cy}" r="26" fill="rgba(95,230,212,.18)" stroke="#5fe6d4"/><text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="11" fill="#5fe6d4">人生领域</text>`;
+  links.forEach(l=>{const a=byId[l.from],b=byId[l.to];if(a&&b)svg+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>`;});
+  nodes.forEach(n=>{const c=AICore.TYPES[n.p.type]?AICore.TYPES[n.p.type].color:'#8aa0b4';svg+=`<circle cx="${n.x}" cy="${n.y}" r="9" fill="${c}"/><text x="${n.x}" y="${n.y+24}" text-anchor="middle" font-size="11" fill="#e8eef5">${esc(n.p.title)}</text><text x="${n.x}" y="${n.y-14}" text-anchor="middle" font-size="9" fill="${c}">${AICore.TYPES[n.p.type]?AICore.TYPES[n.p.type].name:''}</text>`;});
+  svg+='</svg>';$('#graph').innerHTML=svg;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function run(){
+  const txt=$('#in').value.trim(); if(!txt){alert('先输入一句话');return;}
+  $('#out').innerHTML='<p class="muted">端侧分析中…</p>';
+  const res=await AICore.LocalLLM.analyze(txt,{backend});
+  AICore.renderResult($('#out'),res,'plans');
+  renderGraph(res);
+}
+$('#run').onclick=run;
+$('#engBtn').onclick=()=>{backend=backend==='stub'?'webllm':'stub';$('#engBtn').textContent='切换引擎：'+(backend==='stub'?'端侧大模型':'本机启发式');run();};
+run();
+</script>
+</body>
+</html>

@@ -516,6 +516,10 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
         <button class="btn ghost" id="btnPreview" data-page-node-id="Sqggzo23RY7I8wAQ6d7h0y">美化预览</button>
         <button class="btn" id="btnSaveNote" data-page-node-id="0gWJ6Ae1LvBqjXoMkEwaWj">保存为笔记</button>
       </div>
+      <div class="row" style="margin-top:10px;gap:10px">
+        <button class="btn" id="btnVoiceAI" style="flex:1">🎤 长按说话，一句话自动归类</button>
+        <span class="muted" id="voiceAIHint" style="flex:1;text-align:right"></span>
+      </div>
     </div>
     <div class="card" id="previewCard" style="display:none" data-page-node-id="4OcZJBeSSEeZLVv1ocKL6s">
       <div class="row between" data-page-node-id="AbSDLZnz1QnASwOvk61cBg"><b data-page-node-id="L3QafkHLQl0Ofom2wLszD8">预览</b><div class="row" style="gap:8px" data-page-node-id="OaI5fOHFgjzdEU6pkZktEg"><button class="btn ghost" id="btnAI" style="flex:none;padding:8px 12px;font-size:13px" data-page-node-id="peVnf4nShEtHfPU4XC5gr5">✨ AI 自动归类</button><button class="btn ghost" id="btnExtract" style="flex:none;padding:8px 12px;font-size:13px" data-page-node-id="gXkygzSi0sT052V8UpBawU">提取任务到计划</button></div></div>
@@ -588,6 +592,10 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
         <button data-a="0" class="sel" data-page-node-id="gd5ovaGWletMcKZY1NBOQ5">关</button>
         <button data-a="1" data-page-node-id="UZOmFmhuyvF5CuJaCDqNEp">开</button>
       </div>
+      <label class="fld" style="margin-top:14px">端侧模型预载（首次下载，之后离线）</label>
+      <div id="preloadList"></div>
+      <label class="toggle" style="margin-top:8px"><span id="wifiSwitch" class="switch"></span> 仅在 Wi-Fi 下预载（真机策略）</label>
+      <div class="ai-engine-note" id="preloadHint"></div>
     </div>
     <div class="card" data-page-node-id="KEDkHoEgl2EHtSah7TZrNU">
       <b data-page-node-id="UWQ65GeJi2EIDyREdCYDtK">数据备份</b>
@@ -1348,82 +1356,147 @@ const DOMMAP={health:"d_health",growth:"d_growth",career:"d_career",life:"d_life
 function domId(d){return DOMMAP[d]||data.domains[0].id;}
 function similar(a,b){const x=a.replace(/\s/g,"").toLowerCase(),y=b.replace(/\s/g,"").toLowerCase();return x===y||x.includes(y)||y.includes(x);}
 function tokenOverlap(a,b){const ta=(a||"").toLowerCase().match(/[一-龥]{2,}|[a-z]{3,}/g)||[];const tb=(b||"").toLowerCase().match(/[一-龥]{2,}|[a-z]{3,}/g)||[];let n=0;ta.forEach(t=>{if(tb.includes(t))n++;});return n;}
+/* ===== 端侧自动分析（统一：计划 / 待办 / 提醒 / 关联） ===== */
+function aiSplit(text){ if(!text)return []; let x=text.replace(/然后|顺便|还有|以及|另外|同时|并且|而且/g,'|'); return x.split(/[，。；、,;.\n|]+/).map(y=>y.trim()).filter(Boolean); }
+function aiTime(cl){ const t=cl; const map=[[/明早|明天早上|明晨/,'明早'],[/明天|次日/,'明天'],[/今晚|今夜/,'今晚'],[/今天|今日/,'今天'],[/早上|上午/,'早上'],[/下午/,'下午'],[/晚上|夜里|夜间/,'晚上'],[/周末/,'周末'],[/下周|下星期/,'下周'],[/下月|下个月/,'下月'],[/本周|这周|这星期/,'本周'],[/本月|这个月/,'本月']]; let day=null; for(const e of map){ if(e[0].test(t)){day=e[1];break;} } const hm=t.match(/(\d{1,2})\s*[:：点]\s*(\d{1,2})?\s*(分|分钟)?/); let at=null; if(day&&hm)at=day+hm[1]+'点'+(hm[2]?hm[2]+'分':''); else if(day)at=day; else if(hm)at=hm[1]+'点'+(hm[2]?hm[2]+'分':''); let repeat=null; if(/每天|每日|天天/.test(t))repeat='每天'; else if(/每周|每星期|周[一二三四五六日天]/.test(t))repeat='每周'; else if(/每月|每个月/.test(t))repeat='每月'; else if(/一直|长期|习惯|常年/.test(t))repeat='长期'; return at?{label:at,repeat}:(repeat?{label:null,repeat}:null); }
+function aiFreq(cl){ if(/每天|每日|天天/.test(cl))return {type:'daily',label:'每天'}; if(/每周|每星期|周[一二三四五六日天]/.test(cl))return {type:'weekly',label:'每周'}; if(/每月|每个月/.test(cl))return {type:'monthly',label:'每月'}; if(/这周|本周|这星期/.test(cl))return {type:'week',label:'本周'}; if(/一直|长期|习惯|常年/.test(cl))return {type:'forever',label:'长期'}; return {type:'none',label:''}; }
+function aiPlanType(cl){ const t=cl.toLowerCase(); if(/(读|书|阅读|笔记|学习|学|课程|论文|paper|book|read|study|learn|背单词|背\d+个)/.test(cl))return 'reading'; if(/(跑|健身|运动|训练|拉伸|力量|瑜伽|有氧|游泳|骑车|骑行|walk|run|jog|gym|workout|exercise|fitness|公里|千?米)/.test(cl))return 'fitness'; if(/(饮食|吃|餐|营养|蛋白|碳水|减脂|减肥|增肌|喝水|meal|diet|nutrition|protein|carb)/.test(cl))return 'diet'; if(/(项目|计划|目标|坚持|完成|开始|养成)/.test(cl))return 'custom'; return null; }
+function aiDomain(cl){ const t=cl.toLowerCase(); const DOM={d_health:['健康','身体','健身','运动','饮食','睡眠','体重','药','喝水','weight','health'],d_growth:['成长','学习','读书','技能','阅读','课程','单词','skill','grow'],d_career:['工作','事业','项目','会议','客户','产出','业务','work','project','meeting','career'],d_life:['生活','关系','家庭','旅行','朋友','妈妈','家人','life','family']}; let best='d_life',score=0; for(const k in DOM){ let sc=0; DOM[k].forEach(kw=>{ if(t.includes(kw.toLowerCase()))sc++; }); if(sc>score){score=sc;best=k;} } if(score===0){ const ty=aiPlanType(cl); best={reading:'d_growth',fitness:'d_health',diet:'d_health',custom:'d_life'}[ty]||'d_life'; } return best; }
+function aiTodoVerb(cl){ return /(买|做|打电话|交|寄|预约|办理|回复|写|完成|取|拿|接|提交|处理|整理|准备|打扫|洗)/.test(cl); }
+function aiClean(cl,keepTime){ let x=cl.replace(/^(然后|顺便|还有|以及|另外|同时|并且|而且)[，, ]*/,'').replace(/提醒我|记得|别忘了|别忘记|记着|记得到|提醒一下|remind me to|remember to/gi,'').replace(/^我(要|想|得|需要|应该)?/,'').replace(/把|给|去|到/g,'').trim(); if(!keepTime)x=x.replace(/明早|明天|今晚|今天|早上|下午|晚上|周末|下周|下月|本周|本月|\d{1,2}\s*[:：点]\s*\d{0,2}\s*(分|分钟)?|每天|每日|每周|每月|一直|长期|习惯/g,'').trim(); return x||cl.trim(); }
+function aiTopics(text){ const toks=(text||'').toLowerCase().match(/[一-龥]{2,}|[a-z]{3,}/g)||[]; return toks.filter(w=>!/然后|顺便|还有|以及|提醒|记得|每天|每周|每月|今天|明天|早上|下午|晚上|完成|开始|计划|目标/.test(w)); }
+function aiOverlap(a,b){ const A=aiTopics(a),B=aiTopics(b); let n=0; A.forEach(x=>{ if(B.indexOf(x)>=0)n++; }); return n; }
+function aiPlanTitle(cl,ptype){ let x=cl.replace(/^(然后|顺便|还有|以及|另外|同时)[，, ]*/,'').replace(/把|给|去|到|我(要|想|得|需要|应该)?|每天|每日|每周|每月|这周|本周|一直|长期|习惯|坚持|开始|养成/g,'').replace(/读完|学会|学完|完成|减(脂|肥)|增肌/g,'').replace(/\d{1,2}\s*[:：点]\s*\d{0,2}\s*(分|分钟)?/g,'').replace(/《|》|」|「/g,'').trim(); if(ptype==='reading'){ const m=cl.match(/《([^》]+)》|"([^"]+)"|([A-Za-z0-9_: ]{2,})/); if(m)x=(m[1]||m[2]||m[3]||x).trim(); } if(!x)x=TYPES[ptype].name+'计划'; return x.slice(0,18); }
+function aiExtractTasks(cl){ const tasks=[]; const ms=cl.match(/每天[^，。；,;]+|每周[^，。；,;]+|每[^，。；,;]+次|(\d+)\s*(公里|千?米|分钟|组|个)/g); if(ms)ms.forEach(m=>tasks.push(m.trim())); if(!tasks.length){ const m=cl.match(/《([^》]+)》|"([^"]+)"/); if(m)tasks.push('读完《'+(m[1]||m[2])+'》'); } return tasks.slice(0,4).map(t=>({text:t})); }
+function aiBuildLinks(plans,reminders,todos){ const links=[]; for(let i=0;i<plans.length;i++)for(let j=i+1;j<plans.length;j++){ if(plans[i].domain===plans[j].domain)links.push({from:plans[i].id,to:plans[j].id,kind:'plan-plan',relation:'同属「'+domainName(plans[i].domain)+'」'}); } const pByDom={}; plans.forEach(p=>{pByDom[p.domain]=(pByDom[p.domain]||0)+1;}); reminders.forEach(r=>plans.forEach(p=>{ const sd=(r.domain===p.domain&&pByDom[p.domain]===1); if(aiOverlap(r.text,p.title)>=1||aiOverlap(r.text,(TYPES[p.type]?TYPES[p.type].name:''))>=1||sd)links.push({from:r.id,to:p.id,kind:'reminder-plan',relation:sd?'同领域的提醒与计划':'提醒服务于该计划'}); })); todos.forEach(t=>plans.forEach(p=>{ if(aiOverlap(t.text,p.title)>=1)links.push({from:t.id,to:p.id,kind:'todo-plan',relation:'待办支撑该计划'}); })); return links; }
+function aiParseMarkdownPlans(md){ const lines=md.replace(/\r\n/g,'\n').split('\n'); const KW={reading:['读','书','阅读','笔记','学习','文章','课程','paper','book','study','learn'],fitness:['健身','运动','跑步','跑','训练','拉伸','力量','瑜伽','有氧','walk','run','jog','gym','workout','exercise','fitness'],diet:['饮食','吃','餐','营养','蛋白','碳水','减脂','早餐','午餐','晚餐','diet','nutrition','meal','protein','carb']}; const DOM={health:['健康','身体','健身','运动','饮食','睡眠','weight','health'],growth:['成长','学习','读书','技能','阅读','课程','grow','skill'],career:['工作','事业','项目','会议','客户','产出','业务','work','project','meeting','career'],life:['生活','关系','家庭','旅行','朋友','life','family','relationship']}; const score=(text,arr)=>{let sc=0;const t=text.toLowerCase();arr.forEach(k=>{if(t.indexOf(k.toLowerCase())>=0)sc++;});return sc;}; let sections=[],cur=null; lines.forEach(l=>{const h=l.match(/^#{1,6}\s+(.*)$/);if(h){if(cur)sections.push(cur);cur={title:h[1].trim(),body:[]};}else if(cur){cur.body.push(l);}}); if(cur)sections.push(cur); if(!sections.length)sections=[{title:(lines.find(x=>x.trim())||'计划').slice(0,20),body:lines}]; const plans=sections.map(sec=>{ const text=sec.title+' '+sec.body.join(' '); let type='custom',best=0;for(const k in KW){const sc=score(text,KW[k]);if(sc>best){best=sc;type=k;}} let domain='life',dbest=0;for(const k in DOM){const sc=score(text,DOM[k]);if(sc>dbest){dbest=sc;domain=k;}} if(dbest===0)domain={reading:'d_growth',fitness:'d_health',diet:'d_health',custom:'d_life'}[type]; else domain=DOMMAP[domain]||'d_life'; const title=sec.title.replace(/^[一二三四五六七八九十\d]+[、.]\s*/,'').replace(/[：:].*/,'').trim().slice(0,24); const tasks=[];sec.body.forEach(l=>{const m=l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);if(m){let t=m[1].trim();const cb=t.match(/^\[[ xX]\]\s+(.*)$/);if(cb)t=cb[1].trim();if(t)tasks.push(t);}}); return {title,type,domain,raw:sec.title,tasks}; }).filter(p=>p.title); return plans; }
+
+let _llmEngine=null,_llmLoading=false;
+async function getLLMEngine(onProg){ if(_llmEngine)return _llmEngine; if(_llmLoading)return null; _llmLoading=true; try{ const mod=await import('https://esm.run/@mlc-ai/web-llm'); _llmEngine=await mod.CreateMLCEngine('Llama-3.2-1B-Instruct-q4f32_1-MLC',{initProgressCallback:(r)=>{ if(r&&typeof r.progress==='number'&&onProg)onProg(r.progress); }}); return _llmEngine; }catch(e){ _llmLoading=false; throw e; } }
+
 const AIHub={
-  engine(){return (data.ai&&data.ai.engine)||"heuristic";},
-  async classify(md){
-    if(this.engine()==="webllm"){try{return await this.llm(md);}catch(e){console.warn("端侧大模型失败，回退启发式",e);}}
-    return this.heuristic(md);
-  },
+  engine(){return (data.ai&&data.ai.engine)||'heuristic';},
+  async classify(md){ if(this.engine()==='webllm'){try{return await this.llm(md);}catch(e){console.warn('端侧大模型失败，回退启发式',e);}} return this.heuristic(md); },
   heuristic(md){
-    const KW={reading:["读","书","阅读","笔记","学习","文章","课程","paper","book","study","learn"],fitness:["健身","运动","跑步","跑","训练","拉伸","力量","瑜伽","有氧","walk","run","jog","gym","workout","exercise","fitness"],diet:["饮食","吃","餐","营养","蛋白","碳水","减脂","早餐","午餐","晚餐","diet","nutrition","meal","protein","carb"]};
-    const DOM={health:["健康","身体","健身","运动","饮食","睡眠","weight","health"],growth:["成长","学习","读书","技能","阅读","课程","grow","skill"],career:["工作","事业","项目","会议","客户","产出","业务","work","project","meeting","career"],life:["生活","关系","家庭","旅行","朋友","life","family","relationship"]};
-    const score=(text,arr)=>{let s=0;const t=text.toLowerCase();arr.forEach(k=>{if(t.includes(k.toLowerCase()))s++;});return s;};
-    const lines=md.replace(/\r\n/g,"\n").split("\n");
-    let sections=[],cur=null;
-    lines.forEach(l=>{const h=l.match(/^#{1,6}\s+(.*)$/);if(h){if(cur)sections.push(cur);cur={title:h[1].trim(),body:[]};}else if(cur){cur.body.push(l);}});
-    if(cur)sections.push(cur);
-    if(!sections.length)sections=[{title:(lines.find(x=>x.trim())||"计划").slice(0,20),body:lines}];
-    const plans=sections.map(sec=>{
-      const text=sec.title+" "+sec.body.join(" ");
-      let type="custom",best=0;for(const k in KW){const s=score(text,KW[k]);if(s>best){best=s;type=k;}}
-      let domain="life",dbest=0;for(const k in DOM){const s=score(text,DOM[k]);if(s>dbest){dbest=s;domain=k;}}
-      if(dbest===0)domain={reading:"growth",fitness:"health",diet:"health",custom:"life"}[type];
-      const title=sec.title.replace(/^[一二三四五六七八九十\d]+[、.]\s*/,"").replace(/[：:].*/,"").trim().slice(0,24);
-      const tasks=[];sec.body.forEach(l=>{const m=l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);if(m){let t=m[1].trim();const cb=t.match(/^\[[ xX]\]\s+(.*)$/);if(cb)t=cb[1].trim();if(t)tasks.push(t);}});
-      return {title,type,domain,raw:sec.title,tasks};
-    }).filter(p=>p.title);
-    const links=[];
-    for(let i=0;i<plans.length;i++)for(let j=i+1;j<plans.length;j++){const a=plans[i],b=plans[j];if(a.domain!==b.domain)continue;const t1=a.raw.toLowerCase(),t2=b.raw.toLowerCase();const shared=t1.includes(b.title.toLowerCase().slice(0,4))||t2.includes(a.title.toLowerCase().slice(0,4));if(shared||tokenOverlap(a.raw,b.raw)>=2)links.push({a:i,b:j,reason:"同属「"+domainName(a.domain)+"」"});}
-    const todoN=plans.reduce((n,p)=>n+p.tasks.length,0);
-    return {plans,links,summary:"已用本机启发式引擎分析出 "+plans.length+" 个计划方向、"+todoN+" 项待办。"};
+    const text=(md||'').trim();
+    const hasMD=/^#{1,6}\s|^[-*]\s|^\d+\.\s|\[[ xX]\]/m.test(text);
+    let plans=[]; if(hasMD)plans=aiParseMarkdownPlans(text);
+    const cl={plans:[],todos:[],reminders:[]};
+    aiSplit(text).forEach((clu,ci)=>{
+      const time=aiTime(clu); const freq=aiFreq(clu); const dom=aiDomain(clu);
+      const isRemind=/提醒|记得|别忘|别忘了|记着|记得到|提醒一下|remind|remember/.test(clu);
+      const ptype=aiPlanType(clu); const hasGoal=/读完|学会|学完|完成|开始|坚持|养成|目标|计划|减(脂|肥)|增肌/.test(clu);
+      const todoVerb=aiTodoVerb(clu);
+      if(isRemind||(time&&/吃药|喝水|起床|睡觉|会议|打电话|取|拿|接|交|寄/.test(clu))){
+        cl.reminders.push({id:'r'+ci,text:aiClean(clu,true),at:time?time.label:null,repeat:time?time.repeat:null,domain:dom});
+      } else if(ptype&&(freq.type!=='none'||hasGoal||ptype==='reading')){
+        cl.plans.push({id:'p'+ci,title:aiPlanTitle(clu,ptype),type:ptype,domain:dom,frequency:freq,tasks:aiExtractTasks(clu),deadline:freq.type==='week'?(time?time.label:'本周'):null});
+      } else if(todoVerb){
+        cl.todos.push({id:'t'+ci,text:aiClean(clu,false),due:time?time.label:null,priority:/重要|紧急|尽快|必须|一定|赶紧/.test(clu)?'high':'normal',domain:dom,planType:ptype});
+      }
+    });
+    if(!hasMD)plans=cl.plans;
+    const todos=cl.todos,reminders=cl.reminders;
+    if(!plans.length&&!todos.length&&!reminders.length&&text)todos.push({id:'t0',text:text,due:null,priority:'normal',domain:aiDomain(text),planType:null});
+    const links=aiBuildLinks(plans,reminders,todos);
+    const n=plans.length+todos.length+reminders.length;
+    const summary='端侧分析完成：'+plans.length+' 个计划、'+todos.length+' 项待办、'+reminders.length+' 条提醒'+(links.length?'，已自动建立 '+links.length+' 处关联。':'。');
+    return {intent:n>1?'mixed':'single',plans,todos,reminders,links,summary,engine:'heuristic'};
   },
   async llm(md){
-    const sys='把用户给的 Markdown 整理成 JSON 后只输出 JSON。结构：plans 数组，每项有 title(字符串)、type(reading/fitness/diet/custom 之一)、domain(health/growth/career/life 之一)、tasks(字符串数组)；links 数组，每项有 a 和 b(计划序号，从 0 开始)以及 reason(中文说明两个计划的关联)；summary 为一段中文总结。不要输出 JSON 以外的任何文字。';
-    const model="Llama-3.2-1B-Instruct-q4f32_1-MLC";
-    let mod;try{mod=await import("https://esm.run/@mlc-ai/web-llm");}catch(e){throw new Error("无法加载端侧大模型库");}
-    const engine=await mod.CreateMLCEngine(model,{initProgressCallback:(r)=>{const el=document.getElementById("aiBody");if(el)el.innerHTML='<div class="ai-loading"><div class="spin">🤖</div><div style="margin-top:10px">端侧大模型加载中… '+Math.round((r&&r.progress||0)*100)+'%</div></div>';}});
-    const res=await engine.chat.completions.create({messages:[{role:"system",content:sys},{role:"user",content:md}],temperature:0.2,max_tokens:1400});
-    const txt=res.choices[0].message.content||"";const js=txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1);
-    const json=JSON.parse(js);
-    const plans=(json.plans||[]).map(p=>({title:(p.title||"").slice(0,24),type:["reading","fitness","diet","custom"].includes(p.type)?p.type:"custom",domain:["health","growth","career","life"].includes(p.domain)?p.domain:"life",tasks:(p.tasks||[]).map(t=>typeof t==="string"?{text:t,sel:true}:{text:t.text||"",sel:true})}));
-    const links=(json.links||[]).map(l=>({a:l.a,b:l.b,reason:l.reason||""}));
-    return {plans,links,summary:json.summary||"已用端侧大模型完成分析。"};
-  }
+    const sys='你是 LifeOS 的端侧助理。把用户给的内容整理成 JSON，只输出 JSON，不要任何多余文字。结构：{intent:"mixed"|"single",plans:[{title,type:"reading"|"fitness"|"diet"|"custom",domain:"health"|"growth"|"career"|"life",frequency:{type:"daily"|"weekly"|"monthly"|"week"|"forever"|"none",label},tasks:[{text}],deadline}],todos:[{text,due,priority:"high"|"normal",domain}],reminders:[{text,at,repeat}],links:[{from,to,kind:"plan-plan"|"reminder-plan"|"todo-plan",relation}]}。domain 取值：健康health 成长growth 事业career 生活life。';
+    const eng=await getLLMEngine();
+    const res=await eng.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:md}],temperature:0.2,max_tokens:1500});
+    const txt=res.choices[0].message.content||''; const js=txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1); const json=JSON.parse(js);
+    const plans=(json.plans||[]).map(p=>({id:'p'+Math.random().toString(36).slice(2,7),title:(p.title||'').slice(0,18),type:['reading','fitness','diet','custom'].includes(p.type)?p.type:'custom',domain:(DOMMAP[p.domain]||'d_life'),frequency:p.frequency||{type:'none',label:''},tasks:(p.tasks||[]).map(t=>({text:(typeof t==='string'?t:t.text)||'',sel:true})),deadline:p.deadline||null}));
+    const todos=(json.todos||[]).map(t=>({id:'t'+Math.random().toString(36).slice(2,7),text:t.text||'',due:t.due||null,priority:t.priority==='high'?'high':'normal',domain:(DOMMAP[t.domain]||'d_life'),planType:null}));
+    const reminders=(json.reminders||[]).map(r=>({id:'r'+Math.random().toString(36).slice(2,7),text:r.text||'',at:r.at||null,repeat:r.repeat||null,domain:'d_life'}));
+    const links=(json.links||[]).map(l=>({from:l.from,to:l.to,kind:l.kind||'plan-plan',relation:l.relation||''}));
+    const n=plans.length+todos.length+reminders.length;
+    return {intent:n>1?'mixed':'single',plans,todos,reminders,links,summary:json.summary||'已用端侧大模型完成分析。',engine:'webllm'};
+  },
+  async warmupLLM(onProg){ await getLLMEngine(onProg); }
 };
 async function openAIReview(md){
   md=(md||(document.getElementById("mdInput")?document.getElementById("mdInput").value:"")||"").trim();
   if(!md){toast("没有可分析的内容，先粘贴或上传 AI 笔记");return;}
   openSheet('<h3>✨ AI 自动归类</h3><div id="aiBody" class="ai-loading"><div class="spin">🤖</div><div style="margin-top:10px">正在分析…</div></div>');
   let sugg;try{sugg=await AIHub.classify(md);}catch(e){sugg=AIHub.heuristic(md);}
-  if(!sugg||!sugg.plans||!sugg.plans.length){const b=document.getElementById("aiBody");if(b)b.innerHTML='<p class="muted">没分析出可归类的计划，换个内容试试。</p><div class="row" style="margin-top:12px;gap:10px"><button class="btn ghost" onclick="closeSheet()">关闭</button></div>';return;}
-  sugg.plans.forEach(p=>p.tasks.forEach(t=>{if(typeof t==="string")t={text:t,sel:true};else if(t.text===undefined)t.text="";if(t.sel===undefined)t.sel=true;}));
+  if(!sugg||((sugg.plans||[]).length+(sugg.todos||[]).length+(sugg.reminders||[]).length)===0){const b=document.getElementById("aiBody");if(b)b.innerHTML='<p class="muted">没分析出可归类的内容，换个内容试试。</p><div class="row" style="margin-top:12px;gap:10px"><button class="btn ghost" onclick="closeSheet()">关闭</button></div>';return;}
+  sugg.plans.forEach(p=>(p.tasks||[]).forEach(t=>{if(typeof t==="string")t={text:t,sel:true};else if(t.text===undefined)t.text="";if(t.sel===undefined)t.sel=true;}));
   renderAIReview(sugg);
 }
 function renderAIReview(sugg){
-  let h='<div class="muted" style="margin:4px 0 10px">'+escapeHtml(sugg.summary||"")+(AIHub.engine()==="webllm"?' <span class="pill">端侧大模型</span>':' <span class="pill">本机启发式</span>')+'</div>';
-  sugg.plans.forEach((p,i)=>{
-    h+='<div class="ai-plan" data-i="'+i+'"><div class="ttl"><span class="dot" style="background:'+TYPES[p.type].color+'"></span>'+escapeHtml(p.title)+' <span class="pill" style="color:'+TYPES[p.type].color+'">'+TYPES[p.type].icon+TYPES[p.type].name+'</span><span class="pill">'+domainName(domId(p.domain))+'</span></div>';
-    h+=p.tasks.map((t,j)=>'<label class="ai-task-row"><input type="checkbox" data-i="'+i+'" data-j="'+j+'" '+(t.sel!==false?"checked":"")+'><span>'+escapeHtml(t.text)+'</span></label>').join("");
+  sugg.todos=(sugg.todos||[]).map(t=>({sel:t.sel!==false,text:t.text||'',due:t.due||null,priority:t.priority||'normal',id:t.id}));
+  sugg.reminders=(sugg.reminders||[]).map(r=>({sel:r.sel!==false,text:r.text||'',at:r.at||null,repeat:r.repeat||null,domain:r.domain||'d_life',id:r.id}));
+  sugg.plans.forEach(p=>(p.tasks||[]).forEach(t=>{ if(typeof t==='string')t={text:t,sel:true}; else if(t.text===undefined)t.text=''; if(t.sel===undefined)t.sel=true; }));
+  const all=[].concat((sugg.plans||[]).map(p=>({id:p.id,label:p.title})),(sugg.todos||[]).map(t=>({id:t.id,label:t.text})),(sugg.reminders||[]).map(r=>({id:r.id,label:r.text})));
+  const labelOf=id=>{const x=all.find(z=>z.id===id);return x?x.label:id;};
+  let h='<div class="muted" style="margin:4px 0 10px">'+escapeHtml(sugg.summary||'')+(AIHub.engine()==='webllm'?' <span class="pill">端侧大模型</span>':' <span class="pill">本机启发式</span>')+'</div>';
+  (sugg.plans||[]).forEach((p,i)=>{
+    h+='<div class="ai-plan" data-i="'+i+'"><div class="ttl"><span class="dot" style="background:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'"></span>'+escapeHtml(p.title)+' <span class="pill" style="color:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'">'+(TYPES[p.type]?(TYPES[p.type].icon+TYPES[p.type].name):'')+'</span><span class="pill">'+domainName(p.domain)+'</span>'+(p.frequency&&p.frequency.label?' <span class="pill">⏱ '+p.frequency.label+'</span>':'')+(p.deadline?' <span class="pill">🎯 '+escapeHtml(p.deadline)+'</span>':'')+'</div>';
+    h+=(p.tasks||[]).map((t,j)=>'<label class="ai-task-row"><input type="checkbox" data-i="'+i+'" data-j="'+j+'" '+(t.sel!==false?'checked':'')+'><span>'+escapeHtml(t.text)+'</span></label>').join('');
     h+='</div>';
   });
-  if(sugg.links&&sugg.links.length){h+='<div class="ai-plan"><b>关联</b>'+sugg.links.map(l=>{const a=sugg.plans[l.a],b=sugg.plans[l.b];if(!a||!b)return "";return '<div class="ai-link">🔗 '+escapeHtml(a.title)+' ↔ '+escapeHtml(b.title)+'（'+escapeHtml(l.reason||"")+'）</div>';}).join("")+'</div>';}
+  if(sugg.todos&&sugg.todos.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">✅ 待办</h2>'; sugg.todos.forEach((t,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-t="'+i+'" '+(t.sel!==false?'checked':'')+'><span>'+escapeHtml(t.text)+(t.due?' <span class="muted">⏰ '+escapeHtml(t.due)+'</span>':'')+(t.priority==='high'?' <span class="pill" style="color:#ff8e8e">紧急</span>':'')+'</span></label>'; }); }
+  if(sugg.reminders&&sugg.reminders.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔔 提醒</h2>'; sugg.reminders.forEach((r,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-r="'+i+'" '+(r.sel!==false?'checked':'')+'><span>'+escapeHtml(r.text)+(r.at?' <span class="muted">⏰ '+escapeHtml(r.at)+'</span>':'')+(r.repeat?' <span class="muted">🔁 '+escapeHtml(r.repeat)+'</span>':'')+'</span></label>'; }); }
+  if(sugg.links&&sugg.links.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔗 关联</h2><div class="ai-plan">'+sugg.links.map(l=>'<div class="ai-link">🔗 '+escapeHtml(labelOf(l.from))+' ↔ '+escapeHtml(labelOf(l.to))+'（'+escapeHtml(l.relation||'')+'）</div>').join('')+'</div>'; }
   h+='<div class="row" style="margin-top:14px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="aiApply">一键应用</button></div>';
-  const b=document.getElementById("aiBody");if(!b)return;b.innerHTML=h;
-  b.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.onchange=()=>{sugg.plans[+cb.dataset.i].tasks[+cb.dataset.j].sel=cb.checked;});
-  const ap=document.getElementById("aiApply");if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo("relations");toast("已归类到 "+r.total+" 个计划"+(r.created?"（新建 "+r.created+" 个）":""));};
+  const b=document.getElementById('aiBody');if(!b)return;b.innerHTML=h;
+  b.querySelectorAll('input[data-i]').forEach(cb=>cb.onchange=()=>{const p=sugg.plans[+cb.dataset.i];if(p&&p.tasks[+cb.dataset.j])p.tasks[+cb.dataset.j].sel=cb.checked;});
+  b.querySelectorAll('input[data-t]').forEach(cb=>cb.onchange=()=>{sugg.todos[+cb.dataset.t].sel=cb.checked;});
+  b.querySelectorAll('input[data-r]').forEach(cb=>cb.onchange=()=>{sugg.reminders[+cb.dataset.r].sel=cb.checked;});
+  const ap=document.getElementById('aiApply');if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo('relations');toast('已归类到 '+r.total+' 个计划'+(r.created?'（新建 '+r.created+' 个）':'')+(r.todos?'、'+r.todos+' 项待办':'')+(r.reminders?'、'+r.reminders+' 条提醒':''));};
 }
 function applyAI(sugg){
-  const created=[];const planIds=[];
+  const created=[];const planIds=[];const idMap={};
   sugg.plans.forEach(p=>{
-    let plan=data.plans.find(x=>x.type===p.type&&x.domainId===domId(p.domain)&&similar(x.name,p.title));
-    if(!plan){plan={id:uid(),name:p.title,type:p.type,domainId:domId(p.domain),tasks:[]};data.plans.push(plan);created.push(plan);}
-    planIds.push(plan.id);
-    (p.tasks||[]).forEach(t=>{const txt=typeof t==="string"?t:(t.text||"");if(txt&&(t.sel!==false))plan.tasks.push({id:uid(),title:txt,done:false,reminder:"",date:"",note:""});});
+    const did=(p.domain&&String(p.domain).indexOf('d_')===0)?p.domain:domId(p.domain);
+    let plan=data.plans.find(x=>x.type===p.type&&x.domainId===did&&similar(x.name,p.title));
+    if(!plan){plan={id:uid(),name:p.title,type:p.type,domainId:did,tasks:[]};data.plans.push(plan);created.push(plan);}
+    planIds.push(plan.id);idMap[p.id]=plan.id;
+    (p.tasks||[]).forEach(t=>{const txt=(t&&t.text!=null)?t.text:(typeof t==='string'?t:'');if(txt&&(t.sel!==false))plan.tasks.push({id:uid(),title:txt,done:false,reminder:'',date:'',note:''});});
   });
-  (sugg.links||[]).forEach(lk=>{const a=planIds[lk.a],b=planIds[lk.b];if(a&&b&&a!==b){if(!data.links.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a)))data.links.push({a,b});}});
-  save();renderPlans();renderRelations();renderHome();
-  return {created:created.length,total:planIds.length};
+  let todoN=0,remN=0;
+  (sugg.todos||[]).forEach(t=>{ if(t.sel===false)return; data.todos.unshift({id:uid(),title:t.text||'',planId:null,done:false,due:t.due||'',rep:{type:'none'}}); idMap[t.id]=data.todos[0].id; todoN++; });
+  (sugg.reminders||[]).forEach(r=>{ if(r.sel===false)return; data.todos.unshift({id:uid(),title:r.text||'',planId:null,done:false,due:r.at||'',rep:{type:'none'}}); idMap[r.id]=data.todos[0].id; remN++; });
+  (sugg.links||[]).forEach(lk=>{const a=idMap[lk.from],b=idMap[lk.to];if(a&&b&&planIds.indexOf(a)>=0&&planIds.indexOf(b)>=0&&a!==b){if(!data.links.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a)))data.links.push({a,b});}});
+  save();renderPlans();renderRelations();renderHome();renderTodos();
+  return {created:created.length,total:planIds.length,todos:todoN,reminders:remN};
 }
+/* ===== 端侧模型预载（安装即预载 / 首次提示预载） ===== */
+const ModelPreloader={
+  KEY:'lifeos_models_v1', _s:null,
+  load(){ if(this._s)return this._s; try{this._s=JSON.parse(localStorage.getItem(this.KEY)||'{}');}catch(e){this._s={};} return this._s; },
+  save(){ try{localStorage.setItem(this.KEY,JSON.stringify(this._s));}catch(e){} },
+  isReady(n){ return !!this.load()[n]; },
+  setReady(n,v){ this.load()[n]=!!v; this.save(); },
+  async preload(n,opts){ opts=opts||{}; const M={whisper:{load:()=>loadWhisper()},llm:{load:()=>AIHub.warmupLLM(opts.onProgress)}}; const m=M[n]; if(!m)return; try{ await m.load(); this.setReady(n,true); }catch(e){ console.warn('预载失败',n,e); } }
+};
+function renderPreloadUI(){
+  const wrap=document.getElementById('preloadList'); if(!wrap)return;
+  const models=[['whisper','Whisper 语音识别','~75MB'],['llm','端侧语言模型 (Llama-3.2-1B)','~1–2GB']];
+  wrap.innerHTML='';
+  models.forEach((row)=>{ const n=row[0],label=row[1],size=row[2]; const ready=ModelPreloader.isReady(n);
+    const div=document.createElement('div'); div.className='preload-card';
+    div.innerHTML='<div><b>'+label+'</b><div class="muted">'+size+'</div><div class="progress" style="margin-top:6px"><i style="width:'+(ready?100:0)+'%"></i></div></div>'+
+      '<div class="row"><span class="tag '+(ready?'ok':'no')+'" id="ptag_'+n+'">'+(ready?'已预载':'未预载')+'</span><button class="btn" data-m="'+n+'" '+(ready?'disabled':'')+'>'+(ready?'✔':'预载')+'</button></div>';
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>preloadModel(b.dataset.m));
+  const sw=document.getElementById('wifiSwitch'); if(sw)sw.onclick=()=>sw.classList.toggle('on');
+  const hint=document.getElementById('preloadHint'); if(hint)hint.textContent='语音与端侧大模型首次使用需下载；预载后完全离线、零等待。';
+}
+async function preloadModel(n){
+  const cards=document.querySelectorAll('#preloadList .preload-card');
+  let card=null; cards.forEach(c=>{ if(c.querySelector('button[data-m="'+n+'"]'))card=c; });
+  const bar=card?card.querySelector('.progress > i'):null;
+  const tag=document.getElementById('ptag_'+n); const btn=document.querySelector('button[data-m="'+n+'"]');
+  if(btn)btn.disabled=true; if(tag){tag.textContent='下载中…';tag.className='tag no';}
+  await ModelPreloader.preload(n,{});
+  if(bar)bar.style.width='100%'; if(tag){tag.textContent='已预载';tag.className='tag ok';} if(btn)btn.textContent='✔';
+}
+
 function syncAiUI(){
   const eng=document.getElementById("aiEngine");if(eng)eng.querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.e===(data.ai&&data.ai.engine||"heuristic")));
   const au=document.getElementById("aiAuto");if(au)au.querySelectorAll("button").forEach(b=>b.classList.toggle("sel",(data.ai&&data.ai.auto?"1":"0")===b.dataset.a));
@@ -1433,7 +1506,7 @@ function updateAiNote(){const el=document.getElementById("aiEngineNote");if(!el)
 
 /* ===== AI 交互绑定 ===== */
 $("#btnAI").onclick=()=>openAIReview();
-$("#aiEngine").querySelectorAll("button").forEach(b=>b.onclick=()=>{data.ai.engine=b.dataset.e;save();syncAiUI();});
+$("#aiEngine").querySelectorAll("button").forEach(b=>b.onclick=()=>{data.ai.engine=b.dataset.e;save();syncAiUI();if(data.ai.engine==='webllm'){ModelPreloader.preload('llm');}});
 $("#aiAuto").querySelectorAll("button").forEach(b=>b.onclick=()=>{data.ai.auto=b.dataset.a==="1";save();syncAiUI();});
 // debug/test hook
 window.LifeOS={get data(){return data;},AIHub:AIHub,applyAI:applyAI,renderRelations:renderRelations,openAIReview:openAIReview,
@@ -1589,8 +1662,23 @@ function bindPress(){
   document.addEventListener('touchstart',()=>{},{passive:true}); /* enable native :active on iOS */
 }
 
+/* ---- 导入页：长按语音一句话自动归类 ---- */
+(function(){
+  const b=document.getElementById('btnVoiceAI'); if(!b)return; let rec=false;
+  const hint=()=>document.getElementById('voiceAIHint');
+  b.addEventListener('pointerdown',async e=>{ e.preventDefault(); if(rec)return; rec=true; b.classList.add('rec'); if(hint())hint().textContent='聆听中…松开识别';
+    if(!ModelPreloader.isReady('whisper')){ if(hint())hint().textContent='首次预载语音模型…'; try{ await ModelPreloader.preload('whisper'); }catch(err){} }
+    try{ await startRec(); }catch(err){ rec=false; b.classList.remove('rec'); if(hint())hint().textContent=''; toast('无法录音：'+(err&&err.message||err)); }
+  });
+  b.addEventListener('pointerup',async ()=>{ if(!rec)return; rec=false; b.classList.remove('rec'); if(hint())hint().textContent='识别中…';
+    try{ const text=(await recordThenTranscribe()).trim(); if(text){ openAIReview(text); if(hint())hint().textContent=''; } else if(hint())hint().textContent='未识别到内容'; }
+    catch(err){ if(hint())hint().textContent=''; toast('识别失败：'+(err&&err.message||err)); }
+  });
+  b.addEventListener('pointercancel',()=>{ rec=false; b.classList.remove('rec'); if(hint())hint().textContent=''; });
+})();
+
 /* ============ Init ============ */
-function renderAll(){renderHome();renderPlans();renderRelations();renderNotes();renderTodos();
+function renderAll(){renderPreloadUI();renderHome();renderPlans();renderRelations();renderNotes();renderTodos();
   $("#notifPill").textContent=data.settings.notif?"已开启":"未开启";$("#notifPill").classList.toggle("on",data.settings.notif);}
 data=load();applyTheme();renderAll();checkReminders();initRelationCanvas();syncAiUI();bindPress();
 if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications){

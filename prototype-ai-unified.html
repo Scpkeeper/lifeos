@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>LifeOS · 端侧 AI 原型 (4/4) — 一句话统一生成</title>
+</head>
+<body>
+<div class="wrap">
+  <div class="card glass">
+    <h1>④ 一句话统一生成 · Unified</h1>
+    <p class="muted">按住底部麦克风说一句话（或直接在框里输入），端侧模型一次性完成：<b>分类 → 相互关联 → 生成待办 + 计划 + 提醒</b>。</p>
+
+    <!-- 预载策略面板（第一件事） -->
+    <div id="banner" class="summary" style="display:none">首次使用建议预载端侧模型，之后完全离线、零等待。</div>
+    <h2>⬇️ 端侧模型预载（安装即预载 / 首次提示预载）</h2>
+    <div id="prelist"></div>
+    <label class="toggle" style="margin-top:6px"><span id="wifiSw" class="switch"></span> 仅在 Wi-Fi 下预载（真机策略，避免流量）</label>
+
+    <!-- 引擎 & 输入 -->
+    <div class="row" style="margin-top:12px;align-items:flex-end">
+      <div style="flex:1">
+        <textarea id="in" class="field" placeholder="说一句话，例如：明早8点提醒我吃药，这周把《活着》读完，每天跑步30分钟减肥">明早8点提醒我吃药，这周把《活着》读完，顺便每天跑步30分钟减肥</textarea>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="run">端侧分析</button>
+      <button class="btn ghost" id="engBtn">引擎：端侧大模型</button>
+    </div>
+    <div class="row" id="samples" style="margin-top:8px"></div>
+
+    <!-- 语音 -->
+    <div class="center" style="margin-top:6px">
+      <div class="voice-btn" id="mic">🎤<br><span style="font-size:11px">按住说话</span></div>
+      <div class="muted" id="micHint">上滑/松手转写 · 首次需下载 Whisper(~75MB)</div>
+      <div class="progress" id="vprog" style="max-width:240px;margin:6px auto 0;display:none"><i></i></div>
+    </div>
+
+    <div id="out"></div>
+  </div>
+  <p class="muted center">原型 4/4 · 集成了 ① 待办 ② 计划 ③ 提醒 三套能力 + 模型预载门禁</p>
+</div>
+<script src="prototype-ai-core.js"></script>
+<script>
+AICore.injectStyles();
+let backend='stub';
+const $=(s)=>document.querySelector(s);
+
+/* ---------- 预载面板 ---------- */
+function renderPreload(){
+  const wrap=$('#prelist'); wrap.innerHTML='';
+  ['whisper','llm'].forEach(name=>{
+    const m=AICore.MODELS[name]; const ready=AICore.ModelPreloader.isReady(name);
+    const row=document.createElement('div'); row.className='preload-card';
+    row.innerHTML=`<div><b>${m.label}</b><div class="muted">${m.id} · 约 ${m.sizeMB}MB</div>
+      <div class="progress" style="margin-top:6px"><i id="bar_${name}" style="width:${ready?100:0}%"></i></div></div>
+      <div class="row"><span class="tag ${ready?'ok':'no'}" id="tag_${name}">${ready?'已预载':'未预载'}</span>
+      <button class="btn" data-m="${name}" ${ready?'disabled':''}>${ready?'✔':'预载'}</button></div>`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>preload(b.dataset.m));
+}
+async function preload(name){
+  const bar=$('#bar_'+name), tag=$('#tag_'+name), btn=document.querySelector(`button[data-m="${name}"]`);
+  btn.disabled=true; tag.textContent='下载中…'; tag.className='tag no';
+  await AICore.ModelPreloader.preload(name,{onProgress:p=>{bar.style.width=Math.round(p*100)+'%';}});
+  // 真实实现应在此触发 AICore.loadWhisper()/loadLLM() 让权重进入 Cache API
+  tag.textContent='已预载'; tag.className='tag ok'; btn.textContent='✔';
+}
+$('#wifiSw').onclick=()=>$('#wifiSw').classList.toggle('on');
+if(!AICore.ModelPreloader.isReady('whisper') && !AICore.ModelPreloader.isReady('llm')) $('#banner').style.display='block';
+renderPreload();
+
+/* ---------- 示例 ---------- */
+AICore.SAMPLES.forEach(s=>{const c=document.createElement('span');c.className='chip';c.textContent=s.slice(0,10)+'…';c.onclick=()=>{$('#in').value=s;run();};$('#samples').appendChild(c);});
+
+/* ---------- 分析 ---------- */
+async function run(){
+  const txt=$('#in').value.trim(); if(!txt){alert('先输入或说一句话');return;}
+  $('#out').innerHTML='<p class="muted">端侧分析中…</p>';
+  const res=await AICore.LocalLLM.analyze(txt,{backend});
+  AICore.renderResult($('#out'),res,'all');
+}
+$('#run').onclick=run;
+$('#engBtn').onclick=()=>{backend=backend==='stub'?'webllm':'stub';$('#engBtn').textContent='引擎：'+(backend==='stub'?'端侧大模型':'本机启发式');run();};
+
+/* ---------- 语音（端侧 Whisper） ---------- */
+let recStream=null,recMR=null,recChunks=[];
+const mic=$('#mic');
+async function startRec(){
+  recChunks=[];
+  if(!AICore.ModelPreloader.isReady('whisper')){ await preload('whisper'); }
+  recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}});
+  const MR=window.MediaRecorder; recMR=new MR(recStream,{mimeType:['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>MR.isTypeSupported(m))||''});
+  recMR.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data);};
+  recMR.start(); mic.classList.add('rec'); $('#micHint').textContent='录音中…松手转写';
+}
+async function stopRec(){
+  if(!recMR)return; mic.classList.remove('rec'); $('#micHint').textContent='转写中…';
+  const mr=recMR; recMR=null; try{mr.stop();}catch(e){}
+  await new Promise(r=>setTimeout(r,200));
+  const blob=new Blob(recChunks,{type:recChunks[0]?recChunks[0].type:'audio/webm'});
+  $('#vprog').style.display='block';
+  try{
+    const text=await AICore.transcribe(blob,p=>{ if(p&&p.status==='progress'&&typeof p.progress==='number') $('#vprog').firstElementChild.style.width=Math.round(p.progress*100)+'%'; else if(p&&(p.status==='ready'||p.status==='done')) $('#vprog').style.display='none'; });
+    if(text){ $('#in').value=text; run(); }
+    else $('#micHint').textContent='未识别到语音，再试一次';
+  }catch(e){ $('#micHint').textContent='Whisper 加载失败：'+e.message; }
+  $('#vprog').style.display='none';
+  if(recStream){recStream.getTracks().forEach(t=>t.stop());recStream=null;}
+}
+mic.addEventListener('pointerdown',e=>{e.preventDefault();startRec().catch(err=>{$('#micHint').textContent='无法录音：'+(err.message||err);});});
+mic.addEventListener('pointerup',()=>{stopRec().catch(err=>{$('#micHint').textContent='转写失败：'+(err.message||err);});});
+mic.addEventListener('pointerleave',()=>{if(recMR)stopRec();});
+
+run();
+</script>
+</body>
+</html>

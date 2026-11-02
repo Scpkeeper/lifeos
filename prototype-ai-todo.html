@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>LifeOS · 端侧 AI 原型 (1/4) — 待办提取</title>
+</head>
+<body>
+<div class="wrap">
+  <div class="card glass">
+    <h1>① 待办提取 · Todo</h1>
+    <p class="muted">端侧模型从一句话里识别「待办事项」：抽取动作、截止时间、优先级、所属人生领域。<br/>
+      当前引擎：<b id="eng">本机启发式（零下载、即时）</b>。切到「端侧大模型」可调用真实 Qwen2.5-0.5B。</p>
+    <textarea id="in" class="field" placeholder="说一句话，例如：明早8点提醒我吃药，顺便这周交报告">明早8点提醒我吃药，这周五前交季度报告，顺便买牛奶和鸡蛋</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="run">端侧分析</button>
+      <button class="btn ghost" id="engBtn">切换引擎：端侧大模型</button>
+    </div>
+    <div class="row" id="samples" style="margin-top:8px"></div>
+    <div id="out"></div>
+  </div>
+  <p class="muted center">原型 1/4 · 共享内核 <code>prototype-ai-core.js</code> · 与 计划 / 提醒 原型同构</p>
+</div>
+<script src="prototype-ai-core.js"></script>
+<script>
+AICore.injectStyles();
+let backend='stub';
+const $=(s)=>document.querySelector(s);
+// 示例
+AICore.SAMPLES.forEach(s=>{const c=document.createElement('span');c.className='chip';c.textContent=s.slice(0,12)+'…';c.onclick=()=>{$('#in').value=s;run();};$('#samples').appendChild(c);});
+async function run(){
+  const txt=$('#in').value.trim(); if(!txt){alert('先输入一句话');return;}
+  $('#out').innerHTML='<p class="muted">端侧分析中…</p>';
+  const res=await AICore.LocalLLM.analyze(txt,{backend});
+  AICore.renderResult($('#out'),res,'todos');
+  $('#eng').textContent = backend==='webllm' ? '端侧大模型 Qwen2.5-0.5B' : '本机启发式（零下载、即时）';
+}
+$('#run').onclick=run;
+$('#engBtn').onclick=()=>{backend=backend==='stub'?'webllm':'stub';$('#engBtn').textContent='切换引擎：'+(backend==='stub'?'端侧大模型':'本机启发式');run();};
+run();
+</script>
+</body>
+</html>

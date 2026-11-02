@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>LifeOS · 端侧 AI 原型 (3/4) — 提醒解析</title>
+</head>
+<body>
+<div class="wrap">
+  <div class="card glass">
+    <h1>③ 提醒解析 · Reminder</h1>
+    <p class="muted">端侧模型识别「提醒」：解析自然语言时间（明早8点 / 每周一 / 下午3点）、重复规则，并关联其人生领域。<br/>
+      下方按时间轴呈现，便于直接落入今日 / 计划提醒。</p>
+    <textarea id="in" class="field" placeholder="说一句话">明早8点提醒我吃药，下午3点开会，每周一记得给团队发周报</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="run">端侧分析</button>
+      <button class="btn ghost" id="engBtn">切换引擎：端侧大模型</button>
+    </div>
+    <div class="row" id="samples" style="margin-top:8px"></div>
+    <div id="out"></div>
+    <h2 style="margin-top:18px">⏰ 提醒时间轴</h2>
+    <div id="tl" class="glass" style="border-radius:16px;padding:14px"></div>
+  </div>
+  <p class="muted center">原型 3/4 · 提醒可与计划原型自动关联（见 ④ 统一原型）</p>
+</div>
+<script src="prototype-ai-core.js"></script>
+<script>
+AICore.injectStyles();
+let backend='stub';
+const $=(s)=>document.querySelector(s);
+AICore.SAMPLES.forEach(s=>{const c=document.createElement('span');c.className='chip';c.textContent=s.slice(0,12)+'…';c.onclick=()=>{$('#in').value=s;run();};$('#samples').appendChild(c);});
+function renderTimeline(res){
+  const rs=(res.reminders||[]);
+  if(!rs.length){$('#tl').innerHTML='<p class="muted">未解析到提醒。</p>';return;}
+  $('#tl').innerHTML=rs.map(r=>{
+    const dot=AICore.domainColor(r.domain);
+    return `<div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dot};margin-top:6px;flex:none"></div>
+      <div style="flex:1"><div style="font-weight:600">${esc(r.text)}</div>
+      <div class="muted" style="font-size:12px">${r.at?('⏰ '+esc(r.at)+'  '):''}${r.repeat?('🔁 '+esc(r.repeat)):''} · ${AICore.domainName(r.domain)}</div></div></div>`;
+  }).join('');
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function run(){
+  const txt=$('#in').value.trim(); if(!txt){alert('先输入一句话');return;}
+  $('#out').innerHTML='<p class="muted">端侧分析中…</p>';
+  const res=await AICore.LocalLLM.analyze(txt,{backend});
+  AICore.renderResult($('#out'),res,'reminders');
+  renderTimeline(res);
+}
+$('#run').onclick=run;
+$('#engBtn').onclick=()=>{backend=backend==='stub'?'webllm':'stub';$('#engBtn').textContent='切换引擎：'+(backend==='stub'?'端侧大模型':'本机启发式');run();};
+run();
+</script>
+</body>
+</html>
