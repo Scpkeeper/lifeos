@@ -58,11 +58,12 @@ ok('relations domains listed', document.getElementById('relList').innerHTML.incl
 navBtns[1].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // import
 ok('import screen active', document.getElementById('screen-import').classList.contains('active'));
 
-// ---- 4. create a plan via FAB ----
-navBtns[2].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // back to plans
+// ---- 4. create a plan via single FAB + ----
+// the single + opens the import capture surface; manual "计划" button opens the editor
 const fab = document.getElementById('fabBtn');
-fab.dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // opens FAB chips
-document.getElementById('fabPlan').dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // open plan editor
+fab.dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // FAB + -> import screen
+ok('FAB + opens import screen', document.getElementById('screen-import').classList.contains('active'));
+document.getElementById('btnNewPlan').dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // manual plan editor
 const beforePlans = document.querySelectorAll('#planList [data-plan]').length;
 const nameInput = document.getElementById('f_name');
 ok('plan editor opened', !!nameInput);
@@ -224,10 +225,14 @@ setTimeout(() => {
     ok('reminder count shows done/total', /完成/.test(document.getElementById('homeRemCount').textContent));
     remTask.done = false; L.renderHome();
   }
-  // 11b. FAB chips: voice AI at the bottom (last)
-  const chips=[...document.querySelectorAll('#fabChips button')];
-  ok('fab has 3 chips', chips.length===3, 'n='+chips.length);
-  ok('voice AI chip is at bottom', chips[chips.length-1].id==='fabVoice', chips.map(c=>c.id).join(','));
+  // 11b. FAB is now a single + that opens the import capture surface (no expandable chips)
+  ok('fab has no chips container', !document.getElementById('fabChips'));
+  ok('fab has single + button', !!document.getElementById('fabBtn'));
+  document.getElementById('fabBtn').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+  ok('FAB + routes to import screen', document.getElementById('screen-import').classList.contains('active'));
+  ok('import page has voice AI button', !!document.getElementById('btnVoiceAI'));
+  ok('import page has manual plan button', !!document.getElementById('btnNewPlan'));
+  ok('import page has manual todo button', !!document.getElementById('btnNewTodo'));
   // 11c. whole todo row is clickable (not just the tiny box)
   L.renderTodos();
   const row=document.querySelector('#todoList .todo');

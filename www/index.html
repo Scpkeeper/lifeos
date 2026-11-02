@@ -502,8 +502,8 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
   <!-- 导入 -->
   <section class="screen" id="screen-import" data-page-node-id="s5HGe9PvybDV2AhFCiQVOE">
     <div class="card" data-page-node-id="vatdGBxtO7xUKwo6eC9Ecw">
-      <div class="row between" data-page-node-id="0S3LAxhzlTbBEM2SqBhKDv"><b data-page-node-id="IB5jN1TvQRUEIoA4J5YLa9">导入 AI 输出</b><span class="muted" data-page-node-id="mGrFbC0vb01YAD3KwYpWax">自动识别 md / txt</span></div>
-      <p class="muted" style="margin:8px 0 0" data-page-node-id="dAYZgBeE9hBmnGScD5k1pF">把 ChatGPT / Claude / 智能体给你的 Markdown 粘贴进来，或上传 .md / .txt 文件，自动排版美化。</p>
+      <div class="row between" data-page-node-id="0S3LAxhzlTbBEM2SqBhKDv"><b data-page-node-id="IB5jN1TvQRUEIoA4J5YLa9">添加 / 导入</b><span class="muted" data-page-node-id="mGrFbC0vb01YAD3KwYpWax">粘贴 · 输入 · 语音，一句话自动归类</span></div>
+      <p class="muted" style="margin:8px 0 0" data-page-node-id="dAYZgBeE9hBmnGScD5k1pF">把 AI 给你的 Markdown 粘贴进来，或输入文字、上传 .md/.txt；也可以直接 🎤 语音，一句话自动拆成 计划 / 待办 / 提醒，确认后再写入。</p>
       <div class="seg2" style="margin-top:12px" data-page-node-id="IxWJWf3EoYinOpfEXEMwnE">
         <button id="btnSample" data-page-node-id="xDQ51MOjqelH9DUPSzGE9h">填入示例</button>
         <button id="btnUpload" data-page-node-id="9bFHxk5Rqyayrpt5YCSVp0">上传文件</button>
@@ -519,6 +519,11 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
       <div class="row" style="margin-top:10px;gap:10px">
         <button class="btn" id="btnVoiceAI" style="flex:1">🎤 长按说话，一句话自动归类</button>
         <span class="muted" id="voiceAIHint" style="flex:1;text-align:right"></span>
+      </div>
+      <div class="row" style="margin-top:10px;gap:10px;align-items:center">
+        <span class="muted" style="flex:1">或手动新建：</span>
+        <button class="btn ghost" style="flex:none" id="btnNewPlan" onclick="openPlanEditor()">🗂️ 计划</button>
+        <button class="btn ghost" style="flex:none" id="btnNewTodo" onclick="openTodoEditor(null)">📝 待办</button>
       </div>
     </div>
     <div class="card" id="previewCard" style="display:none" data-page-node-id="4OcZJBeSSEeZLVv1ocKL6s">
@@ -553,6 +558,7 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
       <div class="rel-hint muted" data-page-node-id="vRp6xszpHMFIlvG8gVU5e7">中心是「人生领域」，外圈是各项计划；虚线表示计划之间的关联。点节点可查看计划。</div>
     </div>
     <div id="relList" data-page-node-id="LYu3DiDlfv28VJP67VsGUM"><div class="card"><div class="row"><span style="font-size:22px">💪</span><div style="flex:1"><b>健康</b><div class="muted" style="font-size:12px">身体是革命的本钱</div></div><span class="pill">2 计划</span></div><div class="chip" style="border-color:var(--fitness)55;color:var(--fitness)">🏃健身计划</div><div class="chip" style="border-color:var(--diet)55;color:var(--diet)">🥗饮食计划</div></div><div class="card"><div class="row"><span style="font-size:22px">📚</span><div style="flex:1"><b>成长</b><div class="muted" style="font-size:12px">持续学习阅读</div></div><span class="pill">1 计划</span></div><div class="chip" style="border-color:var(--reading)55;color:var(--reading)">📚读书计划</div></div><div class="card"><div class="row"><span style="font-size:22px">💼</span><div style="flex:1"><b>事业</b><div class="muted" style="font-size:12px">产出与影响力</div></div><span class="pill">0 计划</span></div><div class="muted" style="font-size:12px;margin-top:8px">暂无计划归属此领域</div></div><div class="card"><div class="row"><span style="font-size:22px">🌿</span><div style="flex:1"><b>生活</b><div class="muted" style="font-size:12px">关系与生活品质</div></div><span class="pill">0 计划</span></div><div class="muted" style="font-size:12px;margin-top:8px">暂无计划归属此领域</div></div></div>
+  <div id="relEntities"></div>
   </section>
 
   <!-- 待办 -->
@@ -612,7 +618,7 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
     <div class="empty" data-page-node-id="HnOP4yqQEe71tR13gy1e51"><div class="big" data-page-node-id="HKgFsOLjzxwZYHCy5XLUEc">🌱</div>人生系统 v1 · 数据存于本机</div>
   </section>
 
-  <div class="fab" id="fab"><div class="fab-chips" id="fabChips"><button id="fabPlan">🗂️ 新建计划</button><button id="fabTodo">✏️ 手动创建待办</button><button id="fabVoice">🎙️ 语音 AI 自动创建</button></div><button id="fabBtn">＋</button></div>
+<div class="fab" id="fab"><button id="fabBtn" title="添加 / 导入">＋</button></div>
 
   <nav class="nav" id="nav" data-page-node-id="zHGixHsn4m9ieKHDibdxDL">
     <div class="ind" id="navInd" data-page-node-id="fNgFY7yEW8H1pCpXQFlTiW" style="left: 6px; width: 94px;"></div>
@@ -686,6 +692,7 @@ function normalize(d){
   d.graph.nodes=d.graph.nodes||{};d.graph.view=d.graph.view||{x:0,y:0,scale:1};
   d.links=d.links||[];
   d.todos=d.todos||[];
+  d.entities=d.entities||[];
   d.ai=d.ai||{engine:"heuristic",auto:false};
   return d;
 }
@@ -718,6 +725,7 @@ function seed(){
       ]}
     ],
     notes:[],
+    entities:[],
     todos:[
       {id:"t_fit1",title:"买跑步袜",planId:"p_fit",done:false,due:"今天",rep:{type:"none"}},
       {id:"t_diet1",title:"记录今日体重",planId:"p_diet",done:false,due:"",rep:{type:"daily"}},
@@ -1020,7 +1028,7 @@ $("#btnExtract").onclick=()=>{
 function renderNotes(){
   $("#noteCount").textContent=data.notes.length+" 篇";
   $("#noteList").innerHTML=data.notes.length?data.notes.map(n=>{
-    const todo=n.tasks.filter(t=>!t.checked).length;
+    const todo=(n.tasks||[]).filter(t=>!t.checked).length;
     return '<div class="plan" data-note="'+n.id+'"><div class="ic" style="background:var(--primary-soft);color:var(--primary)">📄</div><div style="flex:1"><div style="font-weight:600">'+escapeHtml(n.title)+'</div><div class="muted" style="font-size:12px">'+new Date(n.created).toLocaleDateString("zh-CN")+(n.tasks.length?' · 未完成 '+todo:'')+'</div></div><span class="pill">查看</span></div>';
   }).join(""):'<div class="empty"><div class="big">📥</div>还没有导入的笔记</div>';
   $("#noteList").querySelectorAll("[data-note]").forEach(el=>el.onclick=()=>viewNote(el.dataset.note));
@@ -1182,7 +1190,7 @@ function switchTo(s){
   $("#fab").classList.toggle("show",s==="plans"||s==="todo"||s==="import");
   $("#barAvatar").classList.toggle("open",s==="profile");
   if(s==="home")renderHome();if(s==="plans")renderPlans();if(s==="todo")renderTodos();
-  if(s==="relations")renderRelations();if(s==="import")renderNotes();
+  if(s==="relations"){renderRelations();renderEntities();}if(s==="import")renderNotes();
   setTimeout(moveNavInd,0);
 }
 let lastClip="";
@@ -1286,21 +1294,18 @@ window.addEventListener('resize',moveNavInd);
 moveNavInd();
 /* scroll-blur header */
 window.addEventListener('scroll',()=>{ const ab=document.getElementById('appbar'); if(ab)ab.classList.toggle('scrolled',window.scrollY>8); },{passive:true});
-/* FAB expand */
-const _fab=document.getElementById('fab'); const _fabBtn=document.getElementById('fabBtn');
+/* FAB: 单一全局 + 打开「导入」采集页 */
+const _fabBtn=document.getElementById('fabBtn');
 _fabBtn.onclick=function(){
-  const s=currentScreen();
-  if(s==='import'){ _fab.classList.remove('open'); const ta=document.getElementById('mdInput'); if(ta)ta.focus(); return; }
-  if(_fab.classList.contains('open')){ _fab.classList.remove('open'); } else { _fab.classList.add('open'); }
+  if(currentScreen()==='import'){ const ta=document.getElementById('mdInput'); if(ta)ta.focus(); }
+  else switchTo('import');
 };
 function openTaskQuick(){
   const opts=data.plans.length?data.plans.map(p=>'<button class="btn ghost" style="margin:6px 0;width:100%" onclick="__pickPlan(\''+p.id+'\')">'+TYPES[p.type].icon+p.name+'</button>').join(''):'<div class="muted">还没有计划，先新建一个</div>';
   openSheet('<h3>添加任务到</h3>'+opts);
   window.__pickPlan=function(id){ const p=data.plans.find(x=>x.id===id); if(p){closeSheet();openTaskEditor(p);} };
 }
-const _fp=document.getElementById('fabPlan'); if(_fp)_fp.onclick=()=>{ _fab.classList.remove('open'); openPlanEditor(); };
-const _fv=document.getElementById('fabVoice'); if(_fv)_fv.onclick=()=>{ _fab.classList.remove('open'); openVoice(); };
-const _ft=document.getElementById('fabTodo'); if(_ft)_ft.onclick=()=>{ _fab.classList.remove('open'); openTodoEditor(null); };
+
 
 /* ============ 人生地图 画布交互 ============ */
 let relDrag=null; const relPointers=new Map();
@@ -1371,12 +1376,88 @@ function aiExtractTasks(cl){ const tasks=[]; const ms=cl.match(/每天[^，。�
 function aiBuildLinks(plans,reminders,todos){ const links=[]; for(let i=0;i<plans.length;i++)for(let j=i+1;j<plans.length;j++){ if(plans[i].domain===plans[j].domain)links.push({from:plans[i].id,to:plans[j].id,kind:'plan-plan',relation:'同属「'+domainName(plans[i].domain)+'」'}); } const pByDom={}; plans.forEach(p=>{pByDom[p.domain]=(pByDom[p.domain]||0)+1;}); reminders.forEach(r=>plans.forEach(p=>{ const sd=(r.domain===p.domain&&pByDom[p.domain]===1); if(aiOverlap(r.text,p.title)>=1||aiOverlap(r.text,(TYPES[p.type]?TYPES[p.type].name:''))>=1||sd)links.push({from:r.id,to:p.id,kind:'reminder-plan',relation:sd?'同领域的提醒与计划':'提醒服务于该计划'}); })); todos.forEach(t=>plans.forEach(p=>{ if(aiOverlap(t.text,p.title)>=1)links.push({from:t.id,to:p.id,kind:'todo-plan',relation:'待办支撑该计划'}); })); return links; }
 function aiParseMarkdownPlans(md){ const lines=md.replace(/\r\n/g,'\n').split('\n'); const KW={reading:['读','书','阅读','笔记','学习','文章','课程','paper','book','study','learn'],fitness:['健身','运动','跑步','跑','训练','拉伸','力量','瑜伽','有氧','walk','run','jog','gym','workout','exercise','fitness'],diet:['饮食','吃','餐','营养','蛋白','碳水','减脂','早餐','午餐','晚餐','diet','nutrition','meal','protein','carb']}; const DOM={health:['健康','身体','健身','运动','饮食','睡眠','weight','health'],growth:['成长','学习','读书','技能','阅读','课程','grow','skill'],career:['工作','事业','项目','会议','客户','产出','业务','work','project','meeting','career'],life:['生活','关系','家庭','旅行','朋友','life','family','relationship']}; const score=(text,arr)=>{let sc=0;const t=text.toLowerCase();arr.forEach(k=>{if(t.indexOf(k.toLowerCase())>=0)sc++;});return sc;}; let sections=[],cur=null; lines.forEach(l=>{const h=l.match(/^#{1,6}\s+(.*)$/);if(h){if(cur)sections.push(cur);cur={title:h[1].trim(),body:[]};}else if(cur){cur.body.push(l);}}); if(cur)sections.push(cur); if(!sections.length)sections=[{title:(lines.find(x=>x.trim())||'计划').slice(0,20),body:lines}]; const plans=sections.map(sec=>{ const text=sec.title+' '+sec.body.join(' '); let type='custom',best=0;for(const k in KW){const sc=score(text,KW[k]);if(sc>best){best=sc;type=k;}} let domain='life',dbest=0;for(const k in DOM){const sc=score(text,DOM[k]);if(sc>dbest){dbest=sc;domain=k;}} if(dbest===0)domain={reading:'d_growth',fitness:'d_health',diet:'d_health',custom:'d_life'}[type]; else domain=DOMMAP[domain]||'d_life'; const title=sec.title.replace(/^[一二三四五六七八九十\d]+[、.]\s*/,'').replace(/[：:].*/,'').trim().slice(0,24); const tasks=[];sec.body.forEach(l=>{const m=l.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);if(m){let t=m[1].trim();const cb=t.match(/^\[[ xX]\]\s+(.*)$/);if(cb)t=cb[1].trim();if(t)tasks.push(t);}}); return {title,type,domain,raw:sec.title,tasks}; }).filter(p=>p.title); return plans; }
 
+/* ===== LifeOS 端侧 AI Prompt 体系（见 lifeos_prompt_suite.md） ===== */
+const AIPrompts={
+  main:`你是 LifeOS 的信息整理引擎。把用户的语音转文字或对话内容，整理成结构化 JSON。
+任务分类：
+- 行动项 → todos（含关联的 plan、提醒时间）
+- 规划意图 → plans（含步骤 steps）
+- 想法/信息 → notes
+- 人物/项目 → entities（供关系图谱用）
+输出规则：
+1. 只输出 JSON，不要任何解释、markdown 代码块标记
+2. 只提取内容中明确出现的信息，严禁臆造
+3. 时间统一转成 ISO 格式 "YYYY-MM-DD HH:mm"，只有日期就 "YYYY-MM-DD"，没提时间则不填
+4. reminder：用户明确说了提醒时间的才生成，格式同上
+5. priority：1-5，涉及他人/截止日期/重复提及给 4-5，一般给 2-3，模糊想法给 1
+6. plan_category：从「健康」「成长」「事业」「生活」中选最贴近的，对应输出 domain 字段：health / growth / career / life
+7. type：reading（读书）/ fitness（健身）/ diet（饮食）/ custom（其他）
+8. 内容同时涉及多个计划时，把 todo 的 plan_name 填到对应计划名
+9. 不确定是否该建 todo 的内容，放入 notes 并在 content 里保留原文
+10. 全文控制在 500 字以内的输入直接处理
+Schema:
+{
+  "todos":[{"title":"","plan_name":"可空","priority":1,"due":"可空","reminder":"可空"}],
+  "plans":[{"name":"","domain":"health|growth|career|life","type":"reading|fitness|diet|custom","steps":[{"step":"","due":"可空"}]}],
+  "notes":[{"title":"","content":"","tags":[]}],
+  "entities":[{"name":"","type":"person|project|topic","relation_to":"可空"}]
+}
+返回 JSON 时，plans 每项额外包含 tasks（来自 steps 的 step 文本数组）与 deadline（来自 steps 的 due 或空字符串）；todos 每项额外包含 domain（同 plan_category 的英文取值）；reminders 用 todos 里 reminder 非空的那些项表达。`,
+  whisper:`你是语音转文字的纠错器。修正以下 ASR 文本的错误，使其通顺，但绝不改变原意、不添加内容。
+人名/计划名优先匹配已有词库：{known_names}
+日期时间表达标准化（如"明早八点"→"明天早上8点"保留口语）。
+只输出修正后的文本。
+ASR文本：{asr_text}
+置信度：{confidence}
+（置信度<0.75 时在文本末尾追加 [需确认]）`,
+  matchPlan:`你是计划匹配器。已有计划列表：{existing_plans_json}
+待办：{todo_json}
+任务：判断该待办最可能属于哪个计划。
+规则：
+- 匹配依据优先级：计划名语义 > 关键词重叠 > 类别
+- 置信度>=0.7 输出 plan_name，否则输出 ""
+- 若用户提到的计划不存在于列表，返回 {"plan_name":"", "suggest_new_plan": true, "suggested_category":""}
+只输出 JSON：{"plan_name":"", "confidence":0.0, "suggest_new_plan": false, "suggested_category":""}`,
+  today:`你是每日规划助手。今日日期：{today}
+进行中计划：{active_plans_json}
+今日到期及逾期待办：{due_todos_json}
+最近7天笔记：{recent_notes_json}
+任务：生成今日视图数据。
+输出 JSON：
+{
+  "today_focus":[{"plan_name":"","next_action":"","reason":""}],
+  "overdue_alert":[{"title":"","days_overdue":0}],
+  "reminders_today":[{"title":"","time":"","plan_name":""}],
+  "suggestion":"一句话总结今天最该做的一件事"
+}
+规则：focus 最多3条，按优先级排序；overdue 必须全部列出；suggestion 用中文口语，不超过30字。`,
+  chat:`解析以下 AI 对话记录。区分说话人：用户说出的行动意图→todos；双方讨论形成的计划→plans；AI 给出的建议→notes；提到的人/项目→entities。
+规则同主引擎，额外两条：
+- AI 的建议只有用户明确采纳的才生成 todo，其余进 notes
+- 对话很长的，合并同类项，单字段控制在50字内
+对话内容：{chat_text}
+（输出 schema 与主引擎相同）`,
+  clarify:`基于刚才的整理结果，生成最多2个澄清问题。只在以下情况生成：
+1. todo 缺关键信息（时间/对象）且原文有暗示可猜
+2. 一个新计划只有名字没有内容
+每个问题给出你的猜测答案，让用户点选确认。
+没有需要澄清的就输出 {"questions":[]}
+结果：{result_json}`,
+  relations:`抽取实体间关系。新内容：{new_entities}
+已有图谱节点：{graph_nodes}（超过50个节点时只传相关类别）
+输出新增关系边（不重复已有边）：
+[{"from":"","to":"","relation":"属于/负责/提及/推进","context":""}]
+只输出边列表 JSON。`
+};
+
 let _llmEngine=null,_llmLoading=false;
 async function getLLMEngine(onProg){ if(_llmEngine)return _llmEngine; if(_llmLoading)return null; _llmLoading=true; try{ const mod=await import('https://esm.run/@mlc-ai/web-llm'); _llmEngine=await mod.CreateMLCEngine('Llama-3.2-1B-Instruct-q4f32_1-MLC',{initProgressCallback:(r)=>{ if(r&&typeof r.progress==='number'&&onProg)onProg(r.progress); }}); return _llmEngine; }catch(e){ _llmLoading=false; throw e; } }
-
 const AIHub={
   engine(){return (data.ai&&data.ai.engine)||'heuristic';},
-  async classify(md){ if(this.engine()==='webllm'){try{return await this.llm(md);}catch(e){console.warn('端侧大模型失败，回退启发式',e);}} return this.heuristic(md); },
+  async classify(md){
+    if(this.engine()==='webllm'){try{const r=await this.llm(md);const c=(r.plans||[]).length+(r.todos||[]).length+(r.reminders||[]).length+(r.notes||[]).length+(r.entities||[]).length;if(c)return r;}catch(e){console.warn('端侧大模型失败，回退启发式',e);}}
+    return this.heuristic(md);
+  },
   heuristic(md){
     const text=(md||'').trim();
     const hasMD=/^#{1,6}\s|^[-*]\s|^\d+\.\s|\[[ xX]\]/m.test(text);
@@ -1397,26 +1478,80 @@ const AIHub={
     });
     if(!hasMD)plans=cl.plans;
     const todos=cl.todos,reminders=cl.reminders;
-    if(!plans.length&&!todos.length&&!reminders.length&&text)todos.push({id:'t0',text:text,due:null,priority:'normal',domain:aiDomain(text),planType:null});
+    const notes=[];
+    aiSplit(text).forEach((clu,ci)=>{
+      if(/感觉|觉得|好累|好烦|焦虑|开心|难过|无聊|记录一下|想(.{0,4})(开始|读书|运动|减肥)/.test(clu) && !/提醒|记得|读完|去|计划|每天|每周|交|取|拿/.test(clu)){
+        notes.push({id:'n'+ci,title:'想法记录',content:aiClean(clu,false),tags:[],sel:true});
+      }
+    });
+    const entities=[]; const seenE=new Set();
+    const addE=(name,type,rel)=>{ if(!name||seenE.has(name))return; seenE.add(name); entities.push({id:'e'+entities.length,name,type,relation_to:rel||'',sel:true}); };
+    text.replace(/([一-龥]{1,4})(?:说|提到|的催办|催我|让我)/g,(m,n)=>{ addE(n,'person',''); return m; });
+    (text.match(/《([^》]+)》/g)||[]).forEach(b=>{ addE(b.replace(/[《》]/g,''),'topic',''); });
     const links=aiBuildLinks(plans,reminders,todos);
-    const n=plans.length+todos.length+reminders.length;
-    const summary='端侧分析完成：'+plans.length+' 个计划、'+todos.length+' 项待办、'+reminders.length+' 条提醒'+(links.length?'，已自动建立 '+links.length+' 处关联。':'。');
-    return {intent:n>1?'mixed':'single',plans,todos,reminders,links,summary,engine:'heuristic'};
+    const n=plans.length+todos.length+reminders.length+notes.length+entities.length;
+    const summary='端侧分析完成：'+plans.length+' 个计划、'+todos.length+' 项待办、'+reminders.length+' 条提醒'+(notes.length?'、'+notes.length+' 条笔记':'')+(entities.length?'、'+entities.length+' 个实体':'')+(links.length?'，已自动建立 '+links.length+' 处关联。':'。');
+    return {intent:n>1?'mixed':'single',plans,todos,reminders,notes,entities,links,summary,engine:'heuristic'};
   },
   async llm(md){
-    const sys='你是 LifeOS 的端侧助理。把用户给的内容整理成 JSON，只输出 JSON，不要任何多余文字。结构：{intent:"mixed"|"single",plans:[{title,type:"reading"|"fitness"|"diet"|"custom",domain:"health"|"growth"|"career"|"life",frequency:{type:"daily"|"weekly"|"monthly"|"week"|"forever"|"none",label},tasks:[{text}],deadline}],todos:[{text,due,priority:"high"|"normal",domain}],reminders:[{text,at,repeat}],links:[{from,to,kind:"plan-plan"|"reminder-plan"|"todo-plan",relation}]}。domain 取值：健康health 成长growth 事业career 生活life。';
+    const sys=AIPrompts.main;
     const eng=await getLLMEngine();
-    const res=await eng.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:md}],temperature:0.2,max_tokens:1500});
-    const txt=res.choices[0].message.content||''; const js=txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1); const json=JSON.parse(js);
-    const plans=(json.plans||[]).map(p=>({id:'p'+Math.random().toString(36).slice(2,7),title:(p.title||'').slice(0,18),type:['reading','fitness','diet','custom'].includes(p.type)?p.type:'custom',domain:(DOMMAP[p.domain]||'d_life'),frequency:p.frequency||{type:'none',label:''},tasks:(p.tasks||[]).map(t=>({text:(typeof t==='string'?t:t.text)||'',sel:true})),deadline:p.deadline||null}));
-    const todos=(json.todos||[]).map(t=>({id:'t'+Math.random().toString(36).slice(2,7),text:t.text||'',due:t.due||null,priority:t.priority==='high'?'high':'normal',domain:(DOMMAP[t.domain]||'d_life'),planType:null}));
-    const reminders=(json.reminders||[]).map(r=>({id:'r'+Math.random().toString(36).slice(2,7),text:r.text||'',at:r.at||null,repeat:r.repeat||null,domain:'d_life'}));
-    const links=(json.links||[]).map(l=>({from:l.from,to:l.to,kind:l.kind||'plan-plan',relation:l.relation||''}));
-    const n=plans.length+todos.length+reminders.length;
-    return {intent:n>1?'mixed':'single',plans,todos,reminders,links,summary:json.summary||'已用端侧大模型完成分析。',engine:'webllm'};
+    const res=await eng.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:md}],temperature:0.2,max_tokens:2000});
+    const txt=res.choices[0].message.content||'';
+    const js=txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1);
+    const json=JSON.parse(js);
+    const plans=(json.plans||[]).map(p=>({
+      id:'p'+Math.random().toString(36).slice(2,7),
+      title:(p.name||'').slice(0,18),
+      type:['reading','fitness','diet','custom'].includes(p.type)?p.type:'custom',
+      domain:(DOMMAP[p.domain]||'d_life'),
+      frequency:p.frequency||{type:'none',label:''},
+      tasks:((p.tasks||p.steps||[]).map(t=>(typeof t==='string'?t:(t.step||t.text||''))).filter(Boolean).map(t=>({text:t,sel:true}))),
+      deadline:p.deadline||null
+    }));
+    const todosRaw=(json.todos||[]).map(t=>({
+      id:'t'+Math.random().toString(36).slice(2,7),
+      text:t.title||t.text||'',
+      due:t.due||null,
+      priority:(t.priority&&t.priority>=4)?'high':'normal',
+      domain:(DOMMAP[t.domain]||'d_life'),
+      planType:null,
+      reminder:t.reminder||null
+    }));
+    const reminders=todosRaw.filter(t=>t.reminder).map(t=>({id:'r'+Math.random().toString(36).slice(2,7),text:t.text,at:t.reminder,repeat:null,domain:t.domain}));
+    const todos=todosRaw.filter(t=>!t.reminder);
+    const notes=(json.notes||[]).map(x=>({id:'n'+Math.random().toString(36).slice(2,7),title:x.title||'笔记',content:x.content||'',tags:(x.tags||[]),sel:true}));
+    const entities=(json.entities||[]).map(x=>({id:'e'+Math.random().toString(36).slice(2,7),name:x.name||'',type:x.type||'topic',relation_to:x.relation_to||'',sel:true}));
+    const links=aiBuildLinks(plans,reminders,todos);
+    const n=plans.length+todos.length+reminders.length+notes.length+entities.length;
+    const summary='已用端侧大模型完成分析：'+plans.length+' 个计划、'+todos.length+' 项待办、'+reminders.length+' 条提醒'+(notes.length?'、'+notes.length+' 条笔记':'')+(entities.length?'、'+entities.length+' 个实体':'')+'。';
+    return {intent:n>1?'mixed':'single',plans,todos,reminders,notes,entities,links,summary,engine:'webllm'};
+  },
+  async _ask(user){
+    try{ const eng=await getLLMEngine(); const res=await eng.chat.completions.create({messages:[{role:'user',content:user}],temperature:0.2,max_tokens:1200}); const txt=res.choices[0].message.content||''; const js=txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1); return JSON.parse(js); }catch(e){ console.warn('端侧 LLM 子任务失败',e); return null; }
+  },
+  async postProcessWhisper(text,knownNames,confidence){
+    const user=AIPrompts.whisper.replace('{known_names}',knownNames||'').replace('{asr_text}',text).replace('{confidence}',String(confidence||0.9));
+    try{ const eng=await getLLMEngine(); const res=await eng.chat.completions.create({messages:[{role:'user',content:user}],temperature:0.1,max_tokens:300}); return ((res.choices[0].message.content||'')).trim()||text; }catch(e){ return text; }
+  },
+  async matchPlan(existingPlans,todo){
+    return await this._ask(AIPrompts.matchPlan.replace('{existing_plans_json}',JSON.stringify((existingPlans||[]).map(p=>p.name))).replace('{todo_json}',JSON.stringify(todo)));
+  },
+  async aggregateToday(ctx){
+    return await this._ask(AIPrompts.today.replace('{today}',ctx.today).replace('{active_plans_json}',JSON.stringify(ctx.activePlans)).replace('{due_todos_json}',JSON.stringify(ctx.dueTodos)).replace('{recent_notes_json}',JSON.stringify(ctx.recentNotes)));
+  },
+  async clarify(result){
+    return await this._ask(AIPrompts.clarify.replace('{result_json}',JSON.stringify(result)));
+  },
+  async extractRelations(newEntities,graphNodes){
+    return await this._ask(AIPrompts.relations.replace('{new_entities}',JSON.stringify(newEntities)).replace('{graph_nodes}',JSON.stringify(graphNodes)));
+  },
+  async parseChat(chatText){
+    return await this._ask(AIPrompts.chat.replace('{chat_text}',chatText));
   },
   async warmupLLM(onProg){ await getLLMEngine(onProg); }
 };
+
 function ensureImportNote(md){
   md=(md||'').trim(); if(!md)return null;
   let n=data.notes.find(x=>x.md&&x.md.trim()===md); if(n)return n;
@@ -1429,7 +1564,7 @@ async function openAIReview(md){
   const note=ensureImportNote(md);
   openSheet('<h3>✨ AI 自动归类</h3><div id="aiBody" class="ai-loading"><div class="spin">🤖</div><div style="margin-top:10px">正在分析并全局关联…</div></div>');
   let sugg;try{sugg=await AIHub.classify(md);}catch(e){sugg=AIHub.heuristic(md);}
-  if(!sugg||((sugg.plans||[]).length+(sugg.todos||[]).length+(sugg.reminders||[]).length)===0){const b=document.getElementById("aiBody");if(b)b.innerHTML='<p class="muted">没分析出可归类的内容，换个内容试试。</p><div class="row" style="margin-top:12px;gap:10px"><button class="btn ghost" onclick="closeSheet()">关闭</button></div>';return;}
+  if(!sugg||((sugg.plans||[]).length+(sugg.todos||[]).length+(sugg.reminders||[]).length+(sugg.notes||[]).length+(sugg.entities||[]).length)===0){const b=document.getElementById("aiBody");if(b)b.innerHTML='<p class="muted">没分析出可归类的内容，换个内容试试。</p><div class="row" style="margin-top:12px;gap:10px"><button class="btn ghost" onclick="closeSheet()">关闭</button></div>';return;}
   sugg.plans.forEach(p=>{p.sel=p.sel!==false;p.tasks.forEach(t=>{if(typeof t==="string")t={text:t,sel:true};else if(t.text===undefined)t.text="";if(t.sel===undefined)t.sel=true;});});
   renderAIReview(sugg,note);
 }
@@ -1437,6 +1572,8 @@ function renderAIReview(sugg,note){
   sugg.plans=(sugg.plans||[]).map(p=>({sel:p.sel!==false,...p}));
   sugg.todos=(sugg.todos||[]).map(t=>({sel:t.sel!==false,text:t.text||'',due:t.due||null,priority:t.priority||'normal',id:t.id}));
   sugg.reminders=(sugg.reminders||[]).map(r=>({sel:r.sel!==false,text:r.text||'',at:r.at||null,repeat:r.repeat||null,domain:r.domain||'d_life',id:r.id}));
+  sugg.notes=(sugg.notes||[]).map(x=>({sel:x.sel!==false,title:x.title||'笔记',content:x.content||'',tags:x.tags||[],id:x.id}));
+  sugg.entities=(sugg.entities||[]).map(x=>({sel:x.sel!==false,name:x.name||'',type:x.type||'topic',relation_to:x.relation_to||'',id:x.id}));
   sugg.plans.forEach(p=>(p.tasks||[]).forEach(t=>{ if(typeof t==='string')t={text:t,sel:true}; else if(t.text===undefined)t.text=''; if(t.sel===undefined)t.sel=true; }));
   const all=[].concat((sugg.plans||[]).map(p=>({id:p.id,label:p.title})),(sugg.todos||[]).map(t=>({id:t.id,label:t.text})),(sugg.reminders||[]).map(r=>({id:r.id,label:r.text})));
   const labelOf=id=>{const x=all.find(z=>z.id===id);return x?x.label:id;};
@@ -1448,6 +1585,8 @@ function renderAIReview(sugg,note){
   });
   if(sugg.todos&&sugg.todos.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">✅ 待办</h2>'; sugg.todos.forEach((t,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-t="'+i+'" '+(t.sel!==false?'checked':'')+'><span>'+escapeHtml(t.text)+(t.due?' <span class="muted">⏰ '+escapeHtml(t.due)+'</span>':'')+(t.priority==='high'?' <span class="pill" style="color:#ff8e8e">紧急</span>':'')+'</span></label>'; }); }
   if(sugg.reminders&&sugg.reminders.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔔 提醒</h2>'; sugg.reminders.forEach((r,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-r="'+i+'" '+(r.sel!==false?'checked':'')+'><span>'+escapeHtml(r.text)+(r.at?' <span class="muted">⏰ '+escapeHtml(r.at)+'</span>':'')+(r.repeat?' <span class="muted">🔁 '+escapeHtml(r.repeat)+'</span>':'')+'</span></label>'; }); }
+  if(sugg.notes&&sugg.notes.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">📝 笔记 / 想法</h2>'; sugg.notes.forEach((x,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-n="'+i+'" '+(x.sel!==false?'checked':'')+'><span><b>'+escapeHtml(x.title)+'</b> '+escapeHtml(x.content)+'</span></label>'; }); }
+  if(sugg.entities&&sugg.entities.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">👤 人物 / 项目</h2>'; sugg.entities.forEach((x,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-e="'+i+'" '+(x.sel!==false?'checked':'')+'><span>'+escapeHtml(x.name)+' <span class="pill">'+(x.type==='person'?'人物':x.type==='project'?'项目':'主题')+'</span>'+(x.relation_to?' → '+escapeHtml(x.relation_to):'')+'</span></label>'; }); }
   if(sugg.links&&sugg.links.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔗 关联</h2><div class="ai-plan">'+sugg.links.map(l=>'<div class="ai-link">🔗 '+escapeHtml(labelOf(l.from))+' ↔ '+escapeHtml(labelOf(l.to))+'（'+escapeHtml(l.relation||'')+'）</div>').join('')+'</div>'; }
   h+='<div class="row" style="margin-top:14px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="aiApply">确定并执行</button></div>';
   const b=document.getElementById('aiBody');if(!b)return;b.innerHTML=h;
@@ -1455,7 +1594,9 @@ function renderAIReview(sugg,note){
   b.querySelectorAll('input[data-i]').forEach(cb=>cb.onchange=()=>{const p=sugg.plans[+cb.dataset.i];if(p&&p.tasks[+cb.dataset.j])p.tasks[+cb.dataset.j].sel=cb.checked;});
   b.querySelectorAll('input[data-t]').forEach(cb=>cb.onchange=()=>{sugg.todos[+cb.dataset.t].sel=cb.checked;});
   b.querySelectorAll('input[data-r]').forEach(cb=>cb.onchange=()=>{sugg.reminders[+cb.dataset.r].sel=cb.checked;});
-  const ap=document.getElementById('aiApply');if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo('relations');toast('已归类到 '+r.total+' 个计划'+(r.created?'（新建 '+r.created+' 个）':'')+(r.todos?'、'+r.todos+' 项待办':'')+(r.reminders?'、'+r.reminders+' 条提醒':'')+(r.links?'，全局关联 '+r.links+' 处':''));};
+  b.querySelectorAll('input[data-n]').forEach(cb=>cb.onchange=()=>{sugg.notes[+cb.dataset.n].sel=cb.checked;});
+  b.querySelectorAll('input[data-e]').forEach(cb=>cb.onchange=()=>{sugg.entities[+cb.dataset.e].sel=cb.checked;});
+  const ap=document.getElementById('aiApply');if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo('relations');toast('已归类到 '+r.total+' 个计划'+(r.created?'（新建 '+r.created+' 个）':'')+(r.todos?'、'+r.todos+' 项待办':'')+(r.reminders?'、'+r.reminders+' 条提醒':'')+(r.notes?'、'+r.notes+' 条笔记':'')+(r.entities?'、'+r.entities+' 个实体':'')+(r.links?'，全局关联 '+r.links+' 处':''));};
 }
 function applyAI(sugg){
   const created=[];const planIds=[];const idMap={};const linkSet=new Set();let todoN=0,remN=0;
@@ -1469,13 +1610,17 @@ function applyAI(sugg){
   });
   (sugg.todos||[]).forEach(t=>{ if(t.sel===false)return; data.todos.unshift({id:uid(),title:t.text||'',planId:null,done:false,due:t.due||'',rep:{type:'none'}}); idMap[t.id]=data.todos[0].id; todoN++; });
   (sugg.reminders||[]).forEach(r=>{ if(r.sel===false)return; data.todos.unshift({id:uid(),title:r.text||'',planId:null,done:false,due:r.at||'',rep:{type:'none'}}); idMap[r.id]=data.todos[0].id; remN++; });
+  let noteN=0;
+  (sugg.notes||[]).forEach(x=>{ if(x.sel===false)return; data.notes.unshift({id:uid(),title:x.title||'AI 想法',content:x.content||'',tags:x.tags||[],md:'',created:Date.now(),tasks:[]}); noteN++; });
+  let entN=0;
+  (sugg.entities||[]).forEach(x=>{ if(x.sel===false)return; let en=data.entities.find(e=>e.name===x.name&&e.type===x.type); if(!en){en={id:uid(),name:x.name,type:x.type,relation_to:x.relation_to||''};data.entities.push(en);} else if(x.relation_to&&!en.relation_to){en.relation_to=x.relation_to;} idMap[x.id]=en.id; entN++; });
   (sugg.links||[]).forEach(lk=>{const a=idMap[lk.from],b=idMap[lk.to];if(a&&b&&planIds.indexOf(a)>=0&&planIds.indexOf(b)>=0&&a!==b){const k=[a,b].sort().join('|');if(!linkSet.has(k)&&!data.links.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a))){data.links.push({a,b});linkSet.add(k);}}});
   let gLinks=0;
   planIds.forEach(pid=>{ const np=data.plans.find(x=>x.id===pid); if(!np)return;
     data.plans.forEach(op=>{ if(op.id===pid)return; if(op.domainId===np.domainId){ const k=[op.id,pid].sort().join('|'); if(!linkSet.has(k)&&!data.links.some(x=>(x.a===op.id&&x.b===pid)||(x.a===pid&&x.b===op.id))){data.links.push({a:op.id,b:pid});linkSet.add(k);gLinks++;} } });
   });
-  save();renderPlans();renderRelations();renderHome();renderTodos();
-  return {created:created.length,total:planIds.length,todos:todoN,reminders:remN,links:gLinks};
+  save();renderPlans();renderRelations();renderHome();renderTodos();renderNotes();renderEntities();
+  return {created:created.length,total:planIds.length,todos:todoN,reminders:remN,notes:noteN,entities:entN,links:gLinks};
 }
 /* ===== 端侧模型预载（安装即预载 / 首次提示预载） ===== */
 const ModelPreloader={
@@ -1526,7 +1671,8 @@ window.LifeOS={get data(){return data;},AIHub:AIHub,applyAI:applyAI,renderRelati
   renderTodos:renderTodos,openTodoEditor:openTodoEditor,aiParseTodo:aiParseTodo,repLabel:repLabel,
   planProgress:planProgress,planTodos:planTodos,overallProgress:overallProgress,switchTo:switchTo,
   renderHome:renderHome,renderPlans:renderPlans,
-  loadWhisper:loadWhisper,transcribeViaWhisper:transcribeViaWhisper,startRec:startRec,stopRec:stopRec,recordThenTranscribe:recordThenTranscribe};
+  loadWhisper:loadWhisper,transcribeViaWhisper:transcribeViaWhisper,startRec:startRec,stopRec:stopRec,recordThenTranscribe:recordThenTranscribe,
+  AIPrompts:AIPrompts,renderEntities:renderEntities,renderAIReview:renderAIReview,ensureImportNote:ensureImportNote,heuristic:()=>AIHub.heuristic};
 
 
 /* ============ 待办（可归属计划） ============ */
@@ -1652,7 +1798,8 @@ async function vEnd(){
   catch(e){ voiceStatus.textContent='语音识别失败：'+(e&&e.message||e); voiceHint.textContent='可重试，或手动输入'; voiceConfirm.disabled=true; return; }
   if(!clean){ voiceStatus.textContent='未识别到内容，请重试或手动输入'; voiceHint.textContent='↑ 松开发送 · 右滑取消'; voiceConfirm.disabled=true; return; }
   const ta=document.getElementById('voiceText');
-  if(vMode==='send'){ const d=aiParseTodo(clean);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧 Whisper 创建待办'); }
+  if(AIHub.engine()==='webllm'&&clean){ try{ clean=await AIHub.postProcessWhisper(clean, (data.entities||[]).map(e=>e.name).concat(data.plans.map(p=>p.name)).join('、')); }catch(_){} }
+  if(vMode==='send'){ closeVoice(); if(clean)await openAIReview(clean); return; }
   else{ ta.value=clean;voiceStatus.textContent='已识别，点击「确认创建」';voiceHint.textContent='↑ 松开发送 · 右滑取消';voiceState='done';voiceConfirm.disabled=false; }
 }
 voiceGo.addEventListener('pointerdown',e=>{vHold=true;vStartPt=vPt(e);vDownT=Date.now();vMoved=false;vBegin();e.preventDefault();});
@@ -1691,7 +1838,12 @@ function bindPress(){
 })();
 
 /* ============ Init ============ */
-function renderAll(){renderPreloadUI();renderHome();renderPlans();renderRelations();renderNotes();renderTodos();
+function renderEntities(){
+  const el=document.getElementById('relEntities'); if(!el)return;
+  if(!data.entities.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="card"><b>👤 人物 / 项目</b><div class="muted" style="font-size:12px;margin:4px 0 8px">由端侧 AI 从导入内容中抽取</div>'+data.entities.map(e=>'<div class="chip" style="border-color:var(--teal);color:var(--teal)">'+escapeHtml(e.name)+(e.relation_to?' <span class="muted">→ '+escapeHtml(e.relation_to)+'</span>':'')+'</div>').join('')+'</div>';
+}
+function renderAll(){renderPreloadUI();renderHome();renderPlans();renderRelations();renderEntities();renderNotes();renderTodos();
   $("#notifPill").textContent=data.settings.notif?"已开启":"未开启";$("#notifPill").classList.toggle("on",data.settings.notif);}
 data=load();applyTheme();renderAll();checkReminders();initRelationCanvas();syncAiUI();bindPress();
 if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications){
