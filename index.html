@@ -1417,52 +1417,65 @@ const AIHub={
   },
   async warmupLLM(onProg){ await getLLMEngine(onProg); }
 };
+function ensureImportNote(md){
+  md=(md||'').trim(); if(!md)return null;
+  let n=data.notes.find(x=>x.md&&x.md.trim()===md); if(n)return n;
+  n={id:uid(),title:(md.split('\n').find(l=>l.trim())||'AI 导入笔记').slice(0,24),md,created:Date.now(),tasks:[]};
+  data.notes.unshift(n); save(); renderNotes(); return n;
+}
 async function openAIReview(md){
   md=(md||(document.getElementById("mdInput")?document.getElementById("mdInput").value:"")||"").trim();
   if(!md){toast("没有可分析的内容，先粘贴或上传 AI 笔记");return;}
-  openSheet('<h3>✨ AI 自动归类</h3><div id="aiBody" class="ai-loading"><div class="spin">🤖</div><div style="margin-top:10px">正在分析…</div></div>');
+  const note=ensureImportNote(md);
+  openSheet('<h3>✨ AI 自动归类</h3><div id="aiBody" class="ai-loading"><div class="spin">🤖</div><div style="margin-top:10px">正在分析并全局关联…</div></div>');
   let sugg;try{sugg=await AIHub.classify(md);}catch(e){sugg=AIHub.heuristic(md);}
   if(!sugg||((sugg.plans||[]).length+(sugg.todos||[]).length+(sugg.reminders||[]).length)===0){const b=document.getElementById("aiBody");if(b)b.innerHTML='<p class="muted">没分析出可归类的内容，换个内容试试。</p><div class="row" style="margin-top:12px;gap:10px"><button class="btn ghost" onclick="closeSheet()">关闭</button></div>';return;}
-  sugg.plans.forEach(p=>(p.tasks||[]).forEach(t=>{if(typeof t==="string")t={text:t,sel:true};else if(t.text===undefined)t.text="";if(t.sel===undefined)t.sel=true;}));
-  renderAIReview(sugg);
+  sugg.plans.forEach(p=>{p.sel=p.sel!==false;p.tasks.forEach(t=>{if(typeof t==="string")t={text:t,sel:true};else if(t.text===undefined)t.text="";if(t.sel===undefined)t.sel=true;});});
+  renderAIReview(sugg,note);
 }
-function renderAIReview(sugg){
+function renderAIReview(sugg,note){
+  sugg.plans=(sugg.plans||[]).map(p=>({sel:p.sel!==false,...p}));
   sugg.todos=(sugg.todos||[]).map(t=>({sel:t.sel!==false,text:t.text||'',due:t.due||null,priority:t.priority||'normal',id:t.id}));
   sugg.reminders=(sugg.reminders||[]).map(r=>({sel:r.sel!==false,text:r.text||'',at:r.at||null,repeat:r.repeat||null,domain:r.domain||'d_life',id:r.id}));
   sugg.plans.forEach(p=>(p.tasks||[]).forEach(t=>{ if(typeof t==='string')t={text:t,sel:true}; else if(t.text===undefined)t.text=''; if(t.sel===undefined)t.sel=true; }));
   const all=[].concat((sugg.plans||[]).map(p=>({id:p.id,label:p.title})),(sugg.todos||[]).map(t=>({id:t.id,label:t.text})),(sugg.reminders||[]).map(r=>({id:r.id,label:r.text})));
   const labelOf=id=>{const x=all.find(z=>z.id===id);return x?x.label:id;};
-  let h='<div class="muted" style="margin:4px 0 10px">'+escapeHtml(sugg.summary||'')+(AIHub.engine()==='webllm'?' <span class="pill">端侧大模型</span>':' <span class="pill">本机启发式</span>')+'</div>';
+  let h='<div class="muted" style="margin:4px 0 10px">'+escapeHtml(sugg.summary||'')+(AIHub.engine()==='webllm'?' <span class="pill">端侧大模型</span>':' <span class="pill">本机启发式</span>')+(note?' <span class="pill" style="color:var(--teal)">📄 已存为笔记</span>':'')+'</div>';
   (sugg.plans||[]).forEach((p,i)=>{
-    h+='<div class="ai-plan" data-i="'+i+'"><div class="ttl"><span class="dot" style="background:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'"></span>'+escapeHtml(p.title)+' <span class="pill" style="color:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'">'+(TYPES[p.type]?(TYPES[p.type].icon+TYPES[p.type].name):'')+'</span><span class="pill">'+domainName(p.domain)+'</span>'+(p.frequency&&p.frequency.label?' <span class="pill">⏱ '+p.frequency.label+'</span>':'')+(p.deadline?' <span class="pill">🎯 '+escapeHtml(p.deadline)+'</span>':'')+'</div>';
+    h+='<div class="ai-plan" data-i="'+i+'"><label class="ai-plan-head" style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-pi="'+i+'" '+(p.sel!==false?'checked':'')+'><span class="ttl"><span class="dot" style="background:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'"></span>'+escapeHtml(p.title)+' <span class="pill" style="color:'+(TYPES[p.type]?TYPES[p.type].color:'#8aa0b4')+'">'+(TYPES[p.type]?(TYPES[p.type].icon+TYPES[p.type].name):'')+'</span><span class="pill">'+domainName(p.domain)+'</span>'+(p.frequency&&p.frequency.label?' <span class="pill">⏱ '+p.frequency.label+'</span>':'')+(p.deadline?' <span class="pill">🎯 '+escapeHtml(p.deadline)+'</span>':'')+'</span></label>';
     h+=(p.tasks||[]).map((t,j)=>'<label class="ai-task-row"><input type="checkbox" data-i="'+i+'" data-j="'+j+'" '+(t.sel!==false?'checked':'')+'><span>'+escapeHtml(t.text)+'</span></label>').join('');
     h+='</div>';
   });
   if(sugg.todos&&sugg.todos.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">✅ 待办</h2>'; sugg.todos.forEach((t,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-t="'+i+'" '+(t.sel!==false?'checked':'')+'><span>'+escapeHtml(t.text)+(t.due?' <span class="muted">⏰ '+escapeHtml(t.due)+'</span>':'')+(t.priority==='high'?' <span class="pill" style="color:#ff8e8e">紧急</span>':'')+'</span></label>'; }); }
   if(sugg.reminders&&sugg.reminders.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔔 提醒</h2>'; sugg.reminders.forEach((r,i)=>{ h+='<label class="ai-task-row"><input type="checkbox" data-r="'+i+'" '+(r.sel!==false?'checked':'')+'><span>'+escapeHtml(r.text)+(r.at?' <span class="muted">⏰ '+escapeHtml(r.at)+'</span>':'')+(r.repeat?' <span class="muted">🔁 '+escapeHtml(r.repeat)+'</span>':'')+'</span></label>'; }); }
   if(sugg.links&&sugg.links.length){ h+='<h2 style="margin:10px 0 4px;color:var(--teal)">🔗 关联</h2><div class="ai-plan">'+sugg.links.map(l=>'<div class="ai-link">🔗 '+escapeHtml(labelOf(l.from))+' ↔ '+escapeHtml(labelOf(l.to))+'（'+escapeHtml(l.relation||'')+'）</div>').join('')+'</div>'; }
-  h+='<div class="row" style="margin-top:14px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="aiApply">一键应用</button></div>';
+  h+='<div class="row" style="margin-top:14px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="aiApply">确定并执行</button></div>';
   const b=document.getElementById('aiBody');if(!b)return;b.innerHTML=h;
+  b.querySelectorAll('input[data-pi]').forEach(cb=>cb.onchange=()=>{sugg.plans[+cb.dataset.pi].sel=cb.checked;});
   b.querySelectorAll('input[data-i]').forEach(cb=>cb.onchange=()=>{const p=sugg.plans[+cb.dataset.i];if(p&&p.tasks[+cb.dataset.j])p.tasks[+cb.dataset.j].sel=cb.checked;});
   b.querySelectorAll('input[data-t]').forEach(cb=>cb.onchange=()=>{sugg.todos[+cb.dataset.t].sel=cb.checked;});
   b.querySelectorAll('input[data-r]').forEach(cb=>cb.onchange=()=>{sugg.reminders[+cb.dataset.r].sel=cb.checked;});
-  const ap=document.getElementById('aiApply');if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo('relations');toast('已归类到 '+r.total+' 个计划'+(r.created?'（新建 '+r.created+' 个）':'')+(r.todos?'、'+r.todos+' 项待办':'')+(r.reminders?'、'+r.reminders+' 条提醒':''));};
+  const ap=document.getElementById('aiApply');if(ap)ap.onclick=()=>{const r=applyAI(sugg);closeSheet();switchTo('relations');toast('已归类到 '+r.total+' 个计划'+(r.created?'（新建 '+r.created+' 个）':'')+(r.todos?'、'+r.todos+' 项待办':'')+(r.reminders?'、'+r.reminders+' 条提醒':'')+(r.links?'，全局关联 '+r.links+' 处':''));};
 }
 function applyAI(sugg){
-  const created=[];const planIds=[];const idMap={};
+  const created=[];const planIds=[];const idMap={};const linkSet=new Set();let todoN=0,remN=0;
   sugg.plans.forEach(p=>{
+    if(p.sel===false)return;
     const did=(p.domain&&String(p.domain).indexOf('d_')===0)?p.domain:domId(p.domain);
     let plan=data.plans.find(x=>x.type===p.type&&x.domainId===did&&similar(x.name,p.title));
     if(!plan){plan={id:uid(),name:p.title,type:p.type,domainId:did,tasks:[]};data.plans.push(plan);created.push(plan);}
     planIds.push(plan.id);idMap[p.id]=plan.id;
     (p.tasks||[]).forEach(t=>{const txt=(t&&t.text!=null)?t.text:(typeof t==='string'?t:'');if(txt&&(t.sel!==false))plan.tasks.push({id:uid(),title:txt,done:false,reminder:'',date:'',note:''});});
   });
-  let todoN=0,remN=0;
   (sugg.todos||[]).forEach(t=>{ if(t.sel===false)return; data.todos.unshift({id:uid(),title:t.text||'',planId:null,done:false,due:t.due||'',rep:{type:'none'}}); idMap[t.id]=data.todos[0].id; todoN++; });
   (sugg.reminders||[]).forEach(r=>{ if(r.sel===false)return; data.todos.unshift({id:uid(),title:r.text||'',planId:null,done:false,due:r.at||'',rep:{type:'none'}}); idMap[r.id]=data.todos[0].id; remN++; });
-  (sugg.links||[]).forEach(lk=>{const a=idMap[lk.from],b=idMap[lk.to];if(a&&b&&planIds.indexOf(a)>=0&&planIds.indexOf(b)>=0&&a!==b){if(!data.links.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a)))data.links.push({a,b});}});
+  (sugg.links||[]).forEach(lk=>{const a=idMap[lk.from],b=idMap[lk.to];if(a&&b&&planIds.indexOf(a)>=0&&planIds.indexOf(b)>=0&&a!==b){const k=[a,b].sort().join('|');if(!linkSet.has(k)&&!data.links.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a))){data.links.push({a,b});linkSet.add(k);}}});
+  let gLinks=0;
+  planIds.forEach(pid=>{ const np=data.plans.find(x=>x.id===pid); if(!np)return;
+    data.plans.forEach(op=>{ if(op.id===pid)return; if(op.domainId===np.domainId){ const k=[op.id,pid].sort().join('|'); if(!linkSet.has(k)&&!data.links.some(x=>(x.a===op.id&&x.b===pid)||(x.a===pid&&x.b===op.id))){data.links.push({a:op.id,b:pid});linkSet.add(k);gLinks++;} } });
+  });
   save();renderPlans();renderRelations();renderHome();renderTodos();
-  return {created:created.length,total:planIds.length,todos:todoN,reminders:remN};
+  return {created:created.length,total:planIds.length,todos:todoN,reminders:remN,links:gLinks};
 }
 /* ===== 端侧模型预载（安装即预载 / 首次提示预载） ===== */
 const ModelPreloader={
