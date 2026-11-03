@@ -1107,33 +1107,46 @@ function renderRelations(){
 }
 
 /* ============ Notifications / Reminders ============ */
+const NOTIF_CHANNEL="lifeos";
+let notifReady=false;
+setTimeout(function(){notifReady=true;},1500);
 function notifId(t){let h=7;for(let i=0;i<t.id.length;i++)h=(h*31+t.id.charCodeAt(i))>>>0;return (h%2000000000)+1;}
 function allNotifIds(){return allTasks().map(x=>notifId(x.task));}
-// Android WebView 不支持 Web Notification，必须用原生 LocalNotifications 才会在真机响
+async function ensureNotifChannel(){
+  if(!notifReady)return;
+  try{
+    const L=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications;
+    if(!L)return;
+    if(!(window.Capacitor&&Capacitor.platform==="android"))return;
+    await L.createChannel({id:NOTIF_CHANNEL,name:"LifeOS 提醒",description:"计划与待办提醒",importance:4,visibility:1,vibration:true,lights:false});
+  }catch(e){}
+}
 async function syncLocalNotifications(){
   if(!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications))return;
+  if(!notifReady){setTimeout(syncLocalNotifications,800);return;}
   try{
     const p=await Capacitor.Plugins.LocalNotifications.checkPermissions();
     if(p.display!=="granted")return;
-    await Capacitor.Plugins.LocalNotifications.cancel({notifications:allNotifIds()});
+    const ids=allNotifIds();
+    if(ids.length){await Capacitor.Plugins.LocalNotifications.cancel({notifications:ids.map(function(n){return {id:n};})});}
     const list=[];
     allTasks().forEach(x=>{
       if(!x.task.reminder||x.task.done)return;
       const [hh,mm]=x.task.reminder.split(":").map(Number);
       if(x.task.date){
         const d=new Date(x.task.date+"T"+x.task.reminder);
-        if(d>new Date())list.push({id:notifId(x.task),title:x.plan.name,body:x.task.title,schedule:{at:d}});
+        if(d>new Date())list.push({id:notifId(x.task),title:x.plan.name,body:x.task.title,schedule:{at:d},channelId:NOTIF_CHANNEL});
       }else{
-        list.push({id:notifId(x.task),title:x.plan.name,body:x.task.title,schedule:{on:{hour:hh,minute:mm},every:"day"}});
+        list.push({id:notifId(x.task),title:x.plan.name,body:x.task.title,schedule:{on:{hour:hh,minute:mm},every:"day"},channelId:NOTIF_CHANNEL});
       }
     });
-    if(list.length)await Capacitor.Plugins.LocalNotifications.schedule({notifications:list});
-  }catch(e){}
+    if(list.length){await ensureNotifChannel();await Capacitor.Plugins.LocalNotifications.schedule({notifications:list});}
+  }catch(e){showFatal("通知同步失败 / notif sync error://n"+((e&&e.stack)||e));}
 }
 function scheduleNotifications(){syncLocalNotifications();}
 function ensureNotif(){
   if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications){
-    return Capacitor.Plugins.LocalNotifications.requestPermissions().then(p=>p.display==="granted");
+    return Capacitor.Plugins.LocalNotifications.requestPermissions().then(p=>p&&p.display==="granted").catch(err=>false);
   }
   if(!("Notification"in window)){toast("此环境不支持通知");return Promise.resolve(false);}
   if(Notification.permission==="granted")return Promise.resolve(true);
@@ -1141,17 +1154,19 @@ function ensureNotif(){
   return Notification.requestPermission().then(r=>r==="granted");
 }
 $("#btnNotif").onclick=async()=>{
-  const ok=await ensureNotif();data.settings.notif=ok;save();
-  $("#notifPill").textContent=ok?"已开启":"未开启";$("#notifPill").classList.toggle("on",ok);
-  if(ok){toast("通知已开启，到点会提醒你");if(window.Capacitor)syncLocalNotifications();}
+  try{
+    const ok=await ensureNotif();data.settings.notif=ok;save();
+    $("#notifPill").textContent=ok?"已开启":"未开启";$("#notifPill").classList.toggle("on",ok);
+    if(ok){toast("通知已开启，到时提醒你");if(window.Capacitor)syncLocalNotifications();}
+  }catch(e){showFatal("开启通知失败:\n"+((e&&e.stack)||e));}
 };
 function fireReminder(item){
-  if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications){
-    try{Capacitor.Plugins.LocalNotifications.schedule({notifications:[{id:Math.floor(Math.random()*1e9),title:"⏰ "+item.plan.name,body:item.task.title,schedule:{at:new Date(Date.now()+800)}}]});}catch(e){}
+  if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications&&notifReady){
+    try{ensureNotifChannel();Capacitor.Plugins.LocalNotifications.schedule({notifications:[{id:Math.floor(Math.random()*1e9),title:"⏰ "+item.plan.name,body:item.task.title,schedule:{at:new Date(Date.now()+800),channelId:NOTIF_CHANNEL}}]});}catch(e){}
   }else if(data.settings.notif&&"Notification"in window&&Notification.permission==="granted"){
     try{new Notification("⏰ "+item.plan.name,{body:item.task.title});}catch(e){}
   }
-  toast("⏰ "+item.plan.name+"：「"+item.task.title+"」");
+  toast("⏰ "+item.plan.name+"「"+item.task.title+"」");
 }
 function checkReminders(){
   if(!data.settings.notif)return;
@@ -1845,10 +1860,10 @@ function renderEntities(){
 }
 function renderAll(){renderPreloadUI();renderHome();renderPlans();renderRelations();renderEntities();renderNotes();renderTodos();
   $("#notifPill").textContent=data.settings.notif?"已开启":"未开启";$("#notifPill").classList.toggle("on",data.settings.notif);}
+function showFatal(msg){try{var root=document.body||document.documentElement;var d=document.createElement("div");d.style.cssText="position:fixed;left:0;right:0;top:0;z-index:99999;background:#b00020;color:#fff;font:13px/1.5 monospace;padding:12px;white-space:pre-wrap;max-height:60%;overflow:auto";d.textContent="\u26a0 \u542f\u52a8\u9519\u8bef / Boot error://n"+msg;root.appendChild(d);}catch(e){}try{localStorage.setItem("lastCrash",String(msg));}catch(e){}}window.addEventListener("error",function(ev){showFatal((ev.error&&ev.error.stack)||ev.message||"unknown error");});window.addEventListener("unhandledrejection",function(ev){showFatal("Promise rejection: "+((ev.reason&&ev.reason.stack)||ev.reason||"unknown"));});try{
 data=load();applyTheme();renderAll();checkReminders();initRelationCanvas();syncAiUI();bindPress();
-if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications){
-  Capacitor.Plugins.LocalNotifications.checkPermissions().then(p=>{if(p&&p.display==="granted")syncLocalNotifications();}).catch(()=>{});
-}
+}catch(e){showFatal((e&&e.stack)||String(e));}
+
 // register global helpers used in inline onclick
 window.closeSheet=closeSheet;window.openPlanEditorById=openPlanEditorById;
 window.__editTask=editTask;window.__delTask=deleteTask;window.__editNote=editNote;window.__delNote=deleteNote;
