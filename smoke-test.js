@@ -45,9 +45,9 @@ ok('ring pct present', !!document.getElementById('ringPct'));
 ok('home plans listed', (document.getElementById('homePlans').innerHTML.match(/data-plan/g)||[]).length >= 3);
 
 // ---- 3. tab switching ----
-const navBtns = [...document.querySelectorAll('#nav button')];
-ok('5 nav buttons', navBtns.length === 5);
-navBtns[2].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // plans
+const navBtns = [...document.querySelectorAll('#nav button[data-screen]')];
+ok('4 nav buttons', navBtns.length === 4);
+navBtns[1].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // plans
 ok('plans tab active', document.getElementById('screen-plans').classList.contains('active'));
 ok('plans filter rendered', document.getElementById('planFilter').innerHTML.includes('seg2'));
 
@@ -55,14 +55,15 @@ navBtns[3].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // rela
 ok('relations svg drawn', document.getElementById('relGraph').innerHTML.includes('<svg'));
 ok('relations domains listed', document.getElementById('relList').innerHTML.includes('健康'));
 
-navBtns[1].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // import
-ok('import screen active', document.getElementById('screen-import').classList.contains('active'));
+// (import screen is reached via the dock 导入 tile — see section 4)
 
-// ---- 4. create a plan via single FAB + ----
-// the single + opens the import capture surface; manual "计划" button opens the editor
-const fab = document.getElementById('fabBtn');
-fab.dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // FAB + -> import screen
-ok('FAB + opens import screen', document.getElementById('screen-import').classList.contains('active'));
+// ---- 4. open dock menu, route to import, then open plan editor from 计划 page ----
+const dock = document.getElementById('nav');
+const dockAdd = document.getElementById('dockAdd');
+dockAdd.dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // opens dock menu
+ok('dock menu opens on + tap', dock.classList.contains('open'));
+document.getElementById('dockImport').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+ok('dock 导入 routes to import screen', document.getElementById('screen-import').classList.contains('active'));
 document.getElementById('btnNewPlan').dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // manual plan editor
 const beforePlans = document.querySelectorAll('#planList [data-plan]').length;
 const nameInput = document.getElementById('f_name');
@@ -90,7 +91,7 @@ const newPlan = JSON.parse(window.localStorage.getItem('lifeos_v1')).plans.find(
 ok('task added to plan', newPlan && newPlan.tasks.length === 1 && newPlan.tasks[0].title==='子任务ABC');
 
 // ---- 6. markdown import -> preview -> extract ----
-navBtns[1].dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+window.LifeOS.switchTo('import');
 document.getElementById('mdInput').value = '# 测试笔记\n\n- [ ] 任务一\n- [x] 已完成\n';
 document.getElementById('btnPreview').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
 ok('preview rendered', document.getElementById('previewCard').style.display === 'block' && document.getElementById('mdPreview').innerHTML.includes('<li'));
@@ -117,7 +118,7 @@ delBtn.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
 ok('task deleted', LS().plans.find(p=>p.name==='测试计划XYZ').tasks.length===0);
 
 // ---- 6c. save + delete note ----
-navBtns[1].dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+window.LifeOS.switchTo('import');
 document.getElementById('mdInput').value='# 笔记待删\n\n- [ ] x';
 document.getElementById('btnPreview').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
 document.getElementById('btnSaveNote').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
@@ -151,7 +152,7 @@ ok('relSvg + relView present', !!document.getElementById('relSvg') && !!document
 ok('relGraph has plan nodes', (document.getElementById('relGraph').innerHTML.match(/data-node="plan"/g)||[]).length >= 3);
 
 // ---- 7. theme toggle ----
-navBtns[4].dispatchEvent(new window.MouseEvent('click',{bubbles:true})); // profile
+L.switchTo('profile'); // 我的 reached via profile switch (top-bar avatar / 设置)
 document.getElementById('thmLight').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
 ok('theme -> light', document.documentElement.dataset.theme === 'light');
 document.getElementById('thmDark').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
@@ -193,10 +194,10 @@ setTimeout(() => {
   ok('aiParseTodo -> daily', ap.rep.type==='daily');
   L.renderTodos();
   ok('todoList rendered rows', (document.getElementById('todoList').innerHTML.match(/class="todo/g)||[]).length >= 4);
-  const navBtns=[...document.querySelectorAll('#nav button')].map(b=>b.dataset.screen);
+  const navBtns=[...document.querySelectorAll('#nav button[data-screen]')].map(b=>b.dataset.screen);
   ok('nav has todo tab', navBtns.includes('todo'));
   ok('nav has no profile tab', !navBtns.includes('profile'), navBtns.join(','));
-  ok('nav 5 buttons', navBtns.length===5, 'n='+navBtns.length);
+  ok('nav 4 buttons', navBtns.length===4, 'n='+navBtns.length);
   L.switchTo('todo');
   ok('switchTo todo activates screen', document.getElementById('screen-todo').classList.contains('active'));
   L.switchTo('profile');
@@ -225,14 +226,18 @@ setTimeout(() => {
     ok('reminder count shows done/total', /完成/.test(document.getElementById('homeRemCount').textContent));
     remTask.done = false; L.renderHome();
   }
-  // 11b. FAB is now a single + that opens the import capture surface (no expandable chips)
-  ok('fab has no chips container', !document.getElementById('fabChips'));
-  ok('fab has single + button', !!document.getElementById('fabBtn'));
-  document.getElementById('fabBtn').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
-  ok('FAB + routes to import screen', document.getElementById('screen-import').classList.contains('active'));
+  // 11b. Dock is now a single + that opens a menu (voice / import), no chips container
+  ok('dock has no chips container', !document.getElementById('fabChips'));
+  ok('dock has single + button', !!document.getElementById('dockAdd'));
+  document.getElementById('dockAdd').dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
+  ok('dock + opens menu', document.getElementById('nav').classList.contains('open'));
   ok('import page has voice AI button', !!document.getElementById('btnVoiceAI'));
-  ok('import page has manual plan button', !!document.getElementById('btnNewPlan'));
-  ok('import page has manual todo button', !!document.getElementById('btnNewTodo'));
+  L.switchTo('plans');
+  ok('计划 page has 新建计划 button', !!document.getElementById('btnNewPlan'));
+  L.switchTo('todo');
+  ok('待办 page has 新建待办 button', !!document.querySelector('#screen-todo .page-add'));
+  L.switchTo('relations');
+  ok('关系 page has 新建关系 button', !!document.querySelector('#screen-relations .page-add'));
   // 11c. whole todo row is clickable (not just the tiny box)
   L.renderTodos();
   const row=document.querySelector('#todoList .todo');

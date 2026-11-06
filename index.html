@@ -191,12 +191,44 @@ body{font-size:15px;color:var(--text);}
 .fab.open>button{transform:rotate(135deg);}
 [data-theme="light"] .fab-chips button{background:rgba(255,255,255,0.46);border-color:rgba(40,90,110,0.22);}
 [data-theme="light"] .fab-chips button:hover{background:rgba(255,255,255,0.6);}
-/* 今日提醒进度条 */
+/* Dock: 常驻添加按钮（已融入底部导航栏，与图标对齐） */
+.nav button.dock-add{flex:none;align-self:center;width:54px;height:54px;margin-top:-14px;border-radius:50%;border:none;cursor:pointer;font-size:30px;font-weight:700;line-height:1;color:#04201d;background:linear-gradient(180deg,var(--teal),var(--primary-deep));box-shadow:0 14px 34px #1f9e90bb, 0 0 0 5px #1f9e9022, inset 0 1px 0 var(--gloss);transition:transform .3s cubic-bezier(.2,.9,.3,1), box-shadow .3s;position:relative;z-index:3;display:grid;place-items:center;padding:0;text-align:center;}
+.nav button.dock-add:active{transform:scale(.93);}
+.nav button.dock-add::after{content:"";position:absolute;inset:-6px;border-radius:50%;background:radial-gradient(circle at 50% 35%, #5fe6d455, transparent 70%);z-index:-1;}
+.dock-menu{position:absolute;bottom:calc(100% + 18px);left:50%;transform:translateX(-50%) translateY(14px) scale(.96);display:flex;flex-direction:column;gap:10px;align-items:stretch;padding:12px;width:228px;background:var(--glass);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border:1px solid var(--glass-border);border-radius:22px;box-shadow:0 18px 50px #000a, inset 0 1px 0 var(--gloss);opacity:0;pointer-events:none;transition:.28s cubic-bezier(.2,.9,.3,1);z-index:40;}
+.nav.open .dock-menu{opacity:1;transform:translateX(-50%);pointer-events:auto;}
+.dock-tile{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:16px;border:1px solid var(--glass-border);background:var(--glass-2);color:var(--text);cursor:pointer;box-shadow:inset 0 1px 0 var(--gloss);text-align:left;transition:transform .15s ease, background .2s ease;}
+.dock-tile:hover{background:var(--surface-2);}
+.dock-tile:active{transform:scale(.97);}
+.dock-tile .di{font-size:22px;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--primary-soft);flex:none;}
+.dock-tile .dt{display:flex;flex-direction:column;}
+.dock-tile b{font-size:15px;}
+.dock-tile i{font-size:11px;font-style:normal;color:var(--sub);}
+/* 手动添加二级菜单 */
+.menu-wrap{position:relative;}
+.menu-pop{position:absolute;right:0;bottom:calc(100% + 8px);min-width:168px;display:flex;flex-direction:column;gap:4px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px) scale(.96);pointer-events:none;transition:.2s;z-index:5;}
+.menu-pop.open{opacity:1;transform:none;pointer-events:auto;}
+.menu-pop button{text-align:left;padding:10px 12px;border:none;background:transparent;color:var(--text);border-radius:10px;cursor:pointer;font-size:14px;white-space:nowrap;}
+.menu-pop button:hover{background:var(--glass-2);}
+.inp{width:100%;box-sizing:border-box;padding:10px 12px;margin-top:6px;border-radius:12px;border:1px solid var(--line);background:var(--glass-2);color:var(--text);font-size:14px;outline:none;}
+.inp:focus{border-color:var(--teal);}
+/* 导入：特殊「加号 / 文档」按钮（删去原“上传文件”，以居中的 ＋ 融入，保留特殊质感） */
+.btn-add{position:relative;flex:none;display:grid;place-items:center;min-width:46px;height:40px;padding:0 12px;border:none;cursor:pointer;font-size:22px;font-weight:700;color:#04201d;background:linear-gradient(180deg,var(--teal),var(--primary-deep));border-radius:14px;box-shadow:0 8px 20px #1f9e9055, inset 0 1px 0 var(--gloss);transition:transform .15s ease, box-shadow .2s ease;}
+.btn-add:active{transform:scale(.94);}
+/* 各页面顶部的新建按钮 */
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 4px 8px;}
+.page-head b{font-size:19px;}
+.page-head .muted{font-size:12px;margin-left:8px;}
+.page-add{flex:none;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:none;cursor:pointer;font-size:14px;font-weight:700;color:#04201d;background:linear-gradient(180deg,var(--teal),var(--primary-deep));border-radius:14px;box-shadow:0 8px 20px #1f9e9055, inset 0 1px 0 var(--gloss);transition:transform .15s ease, box-shadow .2s ease;}
+.page-add:active{transform:scale(.95);}
+/* Dock 加号定义已并入上方 .nav button.dock-add（融入导航栏，与图标对齐） */
+ /* 今日提醒进度条 */
+
 .rem-bar{height:8px;border-radius:8px;background:var(--glass-2);overflow:hidden;margin-top:10px;}
 .rem-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),#7af0e2);border-radius:8px;transition:width .5s cubic-bezier(.2,.8,.2,1);}
 
 /* bottom nav */
-.nav{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 14px);left:14px;right:14px;max-width:452px;margin:0 auto;z-index:25;display:flex;
+.nav{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 14px);left:14px;right:14px;max-width:452px;margin:0 auto;z-index:25;display:flex;align-items:center;
   background:var(--glass);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
   border:1px solid var(--glass-border);border-radius:22px;
   padding:8px 6px;box-shadow:0 12px 34px #0007, inset 0 1px 0 var(--gloss);}
@@ -204,6 +236,7 @@ body{font-size:15px;color:var(--text);}
   display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;position:relative;z-index:2;transition:color .25s, transform .2s;}
 .nav button .ico{font-size:20px;line-height:1;transition:transform .2s;}
 .nav button.active{color:var(--teal);}
+.nav-sep{flex:0 0 14px;}
 .nav .ind{position:absolute;top:7px;bottom:7px;left:0;width:0;border-radius:16px;
   background:var(--primary-soft);border:1px solid rgba(95,230,212,0.3);box-shadow:inset 0 1px 0 var(--gloss);
   transition:left .35s cubic-bezier(.2,.85,.25,1), width .35s cubic-bezier(.2,.85,.25,1);z-index:1;}
@@ -503,13 +536,13 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
   <section class="screen" id="screen-import" data-page-node-id="s5HGe9PvybDV2AhFCiQVOE">
     <div class="card" data-page-node-id="vatdGBxtO7xUKwo6eC9Ecw">
       <div class="row between" data-page-node-id="0S3LAxhzlTbBEM2SqBhKDv"><b data-page-node-id="IB5jN1TvQRUEIoA4J5YLa9">添加 / 导入</b><span class="muted" data-page-node-id="mGrFbC0vb01YAD3KwYpWax">粘贴 · 输入 · 语音，一句话自动归类</span></div>
-      <p class="muted" style="margin:8px 0 0" data-page-node-id="dAYZgBeE9hBmnGScD5k1pF">把 AI 给你的 Markdown 粘贴进来，或输入文字、上传 .md/.txt；也可以直接 🎤 语音，一句话自动拆成 计划 / 待办 / 提醒，确认后再写入。</p>
+      <p class="muted" style="margin:8px 0 0" data-page-node-id="dAYZgBeE9hBmnGScD5k1pF">把 AI 给你的内容粘贴进来：Markdown / 会话记录 / 截图均可；也可以直接 🎤 语音，一句话自动拆成 计划 / 待办 / 提醒，确认后再写入。</p>
       <div class="seg2" style="margin-top:12px" data-page-node-id="IxWJWf3EoYinOpfEXEMwnE">
         <button id="btnSample" data-page-node-id="xDQ51MOjqelH9DUPSzGE9h">填入示例</button>
-        <button id="btnUpload" data-page-node-id="9bFHxk5Rqyayrpt5YCSVp0">上传文件</button>
+        <button id="btnUpload" class="btn-add" title="上传文件 / 新建" data-page-node-id="9bFHxk5Rqyayrpt5YCSVp0">＋</button>
         <button id="btnClip" data-page-node-id="jqMcFGSDYxOF7AWBsJNzNv">从剪贴板</button>
       </div>
-      <input type="file" id="fileIn" accept=".md,.txt,.markdown" style="display:none" data-page-node-id="G5466VydYP7a8GoFNkufxH">
+      <input type="file" id="fileIn" accept="image/*,.md,.txt,.markdown,.json,.text" style="display:none" data-page-node-id="G5466VydYP7a8GoFNkufxH">
       <label class="fld" data-page-node-id="N0eJEWXP6tCEjlYg78l9sT">粘贴内容</label>
       <textarea id="mdInput" placeholder="在此粘贴 AI 生成的 Markdown…"></textarea>
       <div class="row" style="margin-top:12px;gap:10px" data-page-node-id="uzFyAMmqWdHBAbQFAjByzg">
@@ -521,9 +554,7 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
         <span class="muted" id="voiceAIHint" style="flex:1;text-align:right"></span>
       </div>
       <div class="row" style="margin-top:10px;gap:10px;align-items:center">
-        <span class="muted" style="flex:1">或手动新建：</span>
-        <button class="btn ghost" style="flex:none" id="btnNewPlan" onclick="openPlanEditor()">🗂️ 计划</button>
-        <button class="btn ghost" style="flex:none" id="btnNewTodo" onclick="openTodoEditor(null)">📝 待办</button>
+        <span class="muted" style="flex:1">或在各页面顶部「＋」直接新建</span>
       </div>
     </div>
     <div class="card" id="previewCard" style="display:none" data-page-node-id="4OcZJBeSSEeZLVv1ocKL6s">
@@ -538,12 +569,14 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
 
   <!-- 计划 -->
   <section class="screen" id="screen-plans" data-page-node-id="7V5YHiI3EqMiQRXI5YshG5">
+    <div class="page-head"><div><b>计划</b><span class="muted">读书 · 健身 · 饮食 · 自定义</span></div><button class="page-add" id="btnNewPlan" onclick="openPlanEditor()">＋ 新建计划</button></div>
     <div class="card" id="planFilter" data-page-node-id="S6V4vWRPOSw9PmT1A49ZHx"><div class="seg2"><button class="sel" data-f="all">全部</button><button class="" data-f="reading">📚读书</button><button class="" data-f="fitness">🏃健身</button><button class="" data-f="diet">🥗饮食</button><button class="" data-f="custom">⭐自定义</button></div></div>
     <div id="planList" data-page-node-id="hZOvNK53aLR5Podw5qGuKc"><div class="card" data-plan="p_read"><div class="row between"><div class="row"><div class="ic" style="width:40px;height:40px;border-radius:11px;background:var(--reading)22;color:var(--reading);display:flex;align-items:center;justify-content:center;font-size:20px">📚</div><div><div style="font-weight:700">读书计划</div><div class="muted" style="font-size:12px">读书 · 归属「成长」</div></div></div><span class="pill">0/2</span></div><div style="margin-top:8px"><div class="task "><input type="checkbox" data-p="p_read" data-t="ozhw0ro"><div><div class="t">读《认知觉醒》30 分钟</div><div class="meta">⏰ 21:00</div></div></div><div class="task "><input type="checkbox" data-p="p_read" data-t="rtt69rl"><div><div class="t">写读书笔记 3 条</div><div class="meta">⏰ 22:00</div></div></div></div></div><div class="card" data-plan="p_fit"><div class="row between"><div class="row"><div class="ic" style="width:40px;height:40px;border-radius:11px;background:var(--fitness)22;color:var(--fitness);display:flex;align-items:center;justify-content:center;font-size:20px">🏃</div><div><div style="font-weight:700">健身计划</div><div class="muted" style="font-size:12px">健身 · 归属「健康」</div></div></div><span class="pill">0/2</span></div><div style="margin-top:8px"><div class="task "><input type="checkbox" data-p="p_fit" data-t="2sxk0l4"><div><div class="t">晨跑 30 分钟</div><div class="meta">⏰ 07:00</div></div></div><div class="task "><input type="checkbox" data-p="p_fit" data-t="c4xyzr5"><div><div class="t">力量训练 20 分钟</div><div class="meta">⏰ 19:00</div></div></div></div></div><div class="card" data-plan="p_diet"><div class="row between"><div class="row"><div class="ic" style="width:40px;height:40px;border-radius:11px;background:var(--diet)22;color:var(--diet);display:flex;align-items:center;justify-content:center;font-size:20px">🥗</div><div><div style="font-weight:700">饮食计划</div><div class="muted" style="font-size:12px">饮食 · 归属「健康」</div></div></div><span class="pill">0/2</span></div><div style="margin-top:8px"><div class="task "><input type="checkbox" data-p="p_diet" data-t="pzsx36f"><div><div class="t">早餐补充蛋白质</div><div class="meta">⏰ 08:00</div></div></div><div class="task "><input type="checkbox" data-p="p_diet" data-t="3fatfab"><div><div class="t">晚餐控制碳水</div><div class="meta">⏰ 19:30</div></div></div></div></div></div>
   </section>
 
   <!-- 关系 -->
   <section class="screen" id="screen-relations" data-page-node-id="tyJ6H3uS1by1PRjjgGPVdW">
+    <div class="page-head"><div><b>关系</b><span class="muted">人物 / 项目 / 领域</span></div><button class="page-add" onclick="openRelationEditor()">＋ 新建关系</button></div>
     <div class="card rel-card" id="relCard" data-page-node-id="gF3xXINc6d49B60rgrWm0A">
       <div class="row between" data-page-node-id="b9xZocrO8XQDGD9Xbrkxfv">
         <div data-page-node-id="vc9qH4o9hddgTCaECF0vxs"><b data-page-node-id="d8vVJslNQxymS3jY01Vj4S">人生地图</b><div class="muted" style="font-size:12px;margin-top:2px" data-page-node-id="bkTCFBDviipBlsL2qjzp4d">双指/滚轮缩放 · 拖动空白平移 · 拖动节点摆放</div></div>
@@ -563,6 +596,7 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
 
   <!-- 待办 -->
   <section class="screen" id="screen-todo">
+    <div class="page-head"><div><b>待办</b><span class="muted">杂事与计划任务</span></div><button class="page-add" onclick="openTodoEditor(null)">＋ 新建待办</button></div>
     <div class="card">
       <div class="row between"><b>待办</b><span class="muted" id="todoCount">0 项</span></div>
       <p class="muted" style="margin:6px 0 0;font-size:12px">杂事与计划任务。归属到某计划后，会一并计入该计划的整体完成度，为数据看板铺路。</p>
@@ -618,15 +652,17 @@ label.fld{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;}
     <div class="empty" data-page-node-id="HnOP4yqQEe71tR13gy1e51"><div class="big" data-page-node-id="HKgFsOLjzxwZYHCy5XLUEc">🌱</div>人生系统 v1 · 数据存于本机</div>
   </section>
 
-<div class="fab" id="fab"><button id="fabBtn" title="添加 / 导入">＋</button></div>
-
   <nav class="nav" id="nav" data-page-node-id="zHGixHsn4m9ieKHDibdxDL">
     <div class="ind" id="navInd" data-page-node-id="fNgFY7yEW8H1pCpXQFlTiW" style="left: 6px; width: 94px;"></div>
     <button data-screen="home" class="active" style="font-weight: 700;"><span class="ico">🏠</span>今日</button>
-    <button data-screen="import" style="font-weight: 700;"><span class="ico">📥</span>导入</button>
     <button data-screen="plans" style="font-weight: 700;"><span class="ico">🗂️</span>计划</button>
+    <button class="dock-add" id="dockAdd" title="添加">＋</button>
     <button data-screen="todo" style="font-weight: 700;"><span class="ico">📝</span>待办</button>
     <button data-screen="relations" style="font-weight: 700;"><span class="ico">🕸️</span>关系</button>
+    <div class="dock-menu" id="dockMenu">
+      <button class="dock-tile" id="dockVoice"><span class="di">🎤</span><span class="dt"><b>语音添加</b><i>一句话自动归类</i></span></button>
+      <button class="dock-tile" id="dockImport"><span class="di">📥</span><span class="dt"><b>导入</b><i>AI 截图 · Markdown · 会话记录</i></span></button>
+    </div>
   </nav>
 
     <!-- 语音录入卡（端侧模型） -->
@@ -810,16 +846,13 @@ function domainName(id){const d=data.domains.find(x=>x.id===id);return d?d.name:
 const NAV_TITLES={home:["今日","人生系统 · LifeOS"],import:["导入","自动美化 AI 输出"],plans:["计划","读书·健身·饮食·自定义"],todo:["待办","杂事与计划任务"],relations:["关系","计划之间的联系"],profile:["我的","设置与备份"]};
 $("#nav").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
+  if(!b.dataset.screen)return;
   switchTo(b.dataset.screen);
 });
 $("#barAvatar").addEventListener("click",()=>{
   const on=$("#screen-profile").classList.contains("active");
   switchTo(on?"home":"profile");
 });
-$("#fabBtn").onclick=()=>{
-  const s=[...$("#nav").children].find(x=>x.classList.contains("active")).dataset.screen;
-  if(s==="plans")openPlanEditor();else if(s==="import"){$("#mdInput").focus();}
-};
 $("#sheetX").onclick=closeSheet;
 $("#overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeSheet();});
 
@@ -993,7 +1026,9 @@ const SAMPLE=`# 我的 2026 春季成长方案（AI 生成）
 $("#btnSample").onclick=()=>{$("#mdInput").value=SAMPLE;toast("已填入示例，点「美化预览」");};
 $("#btnUpload").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{
-  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  const f=e.target.files[0];if(!f)return;
+  if(f.type&&f.type.indexOf('image/')===0){ toast("截图已选：图片转文字（OCR）将于后续版本接入，当前请粘贴会话文本"); $("#fileIn").value=""; return; }
+  const r=new FileReader();
   r.onload=()=>{$("#mdInput").value=r.result;$("#btnPreview").click();if(data.ai&&data.ai.auto)setTimeout(()=>openAIReview($("#mdInput").value),350);};
   r.readAsText(f);
 };
@@ -1202,7 +1237,6 @@ function switchTo(s){
   [...$("#nav").children].forEach(x=>x.classList.toggle("active",x===navBtn));
   const t=NAV_TITLES[s]||["",""];
   $("#barTitle").textContent=t[0];$("#barSub").textContent=t[1];
-  $("#fab").classList.toggle("show",s==="plans"||s==="todo"||s==="import");
   $("#barAvatar").classList.toggle("open",s==="profile");
   if(s==="home")renderHome();if(s==="plans")renderPlans();if(s==="todo")renderTodos();
   if(s==="relations"){renderRelations();renderEntities();}if(s==="import")renderNotes();
@@ -1309,12 +1343,21 @@ window.addEventListener('resize',moveNavInd);
 moveNavInd();
 /* scroll-blur header */
 window.addEventListener('scroll',()=>{ const ab=document.getElementById('appbar'); if(ab)ab.classList.toggle('scrolled',window.scrollY>8); },{passive:true});
-/* FAB: 单一全局 + 打开「导入」采集页 */
-const _fabBtn=document.getElementById('fabBtn');
-_fabBtn.onclick=function(){
-  if(currentScreen()==='import'){ const ta=document.getElementById('mdInput'); if(ta)ta.focus(); }
-  else switchTo('import');
-};
+function openRelationEditor(){
+  openSheet('<h3>新建关系 / 人物 / 项目</h3>'
+    +'<label class="fld">名称</label><input id="relName" class="inp" placeholder="例如：张伟 / 产品评审">'
+    +'<label class="fld" style="margin-top:10px">与我的关系（可选）</label><input id="relTo" class="inp" placeholder="例如：同事 / 客户">'
+    +'<div class="row" style="margin-top:14px;gap:10px"><button class="btn ghost" onclick="closeSheet()">取消</button><button class="btn" id="relSave">保存</button></div>');
+  document.getElementById('relSave').onclick=()=>{ const n=document.getElementById('relName').value.trim(); if(!n){toast('请填写名称');return;} data.entities.push({id:uid(),name:n,relation_to:document.getElementById('relTo').value.trim()}); save(); closeSheet(); renderRelations(); renderEntities(); toast('已添加关系'); };
+}
+/* Dock: 常驻添加按钮，展开选择 语音添加 / 导入 */
+(function(){
+  const dock=document.getElementById('nav'); if(!dock)return; const close=()=>dock.classList.remove('open');
+  document.getElementById('dockAdd').addEventListener('click',e=>{e.stopPropagation();dock.classList.toggle('open');});
+  document.getElementById('dockVoice').addEventListener('click',()=>{close();openVoice();});
+  document.getElementById('dockImport').addEventListener('click',()=>{close();switchTo('import');});
+  document.addEventListener('pointerdown',e=>{ if(dock.classList.contains('open')&&!dock.contains(e.target)) close(); },true);
+})();
 function openTaskQuick(){
   const opts=data.plans.length?data.plans.map(p=>'<button class="btn ghost" style="margin:6px 0;width:100%" onclick="__pickPlan(\''+p.id+'\')">'+TYPES[p.type].icon+p.name+'</button>').join(''):'<div class="muted">还没有计划，先新建一个</div>';
   openSheet('<h3>添加任务到</h3>'+opts);
@@ -1667,7 +1710,10 @@ async function preloadModel(n){
   const tag=document.getElementById('ptag_'+n); const btn=document.querySelector('button[data-m="'+n+'"]');
   if(btn)btn.disabled=true; if(tag){tag.textContent='下载中…';tag.className='tag no';}
   await ModelPreloader.preload(n,{});
-  if(bar)bar.style.width='100%'; if(tag){tag.textContent='已预载';tag.className='tag ok';} if(btn)btn.textContent='✔';
+  const ok=ModelPreloader.isReady(n);
+  if(bar)bar.style.width= ok?'100%':'0%';
+  if(tag){tag.textContent= ok?'已预载':'预载失败（需联网）'; tag.className='tag '+(ok?'ok':'no');}
+  if(btn){btn.textContent= ok?'✔':'重试'; btn.disabled=ok;}
 }
 
 function syncAiUI(){
@@ -1765,8 +1811,8 @@ function aiParseTodo(text){
 const voice=document.getElementById('voice');let voiceState='idle';
 const voiceStatus=document.getElementById('voiceStatus');const voiceConfirm=document.getElementById('voiceConfirm');
 const voiceHint=document.getElementById('voiceHint');const voiceProg=document.getElementById('voiceProg');const voiceProgBar=document.getElementById('voiceProgBar');
-function openVoice(){voiceState='idle';voice.classList.remove('listening','send','cancel');voiceStatus.textContent='长按底部麦克风开始说话';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';document.getElementById('voiceText').value='';voiceConfirm.disabled=true;if(voiceProg)voiceProg.style.display='none';voice.classList.add('show');}
-function closeVoice(){voice.classList.remove('show');voice.classList.remove('listening','send','cancel');if(recMR&&recMR.state!=='inactive'){try{recMR.stop();}catch(e){}}}
+function openVoice(){voiceState='idle';voice.classList.remove('listening','send','cancel');voiceStatus.textContent='长按底部麦克风开始说话';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';document.getElementById('voiceText').value='';voiceConfirm.disabled=true;if(voiceProg)voiceProg.style.display='none';try{ loadWhisper().catch(e=>console.warn('whisper preload',e)); }catch(_){} voice.classList.add('show');}
+function closeVoice(){voice.classList.remove('show');voice.classList.remove('listening','send','cancel');try{ if(recStream)recStream.getTracks().forEach(t=>t.stop()); }catch(_){} try{ if(recWorklet)recWorklet.disconnect(); }catch(_){} try{ if(recProc)recProc.disconnect(); }catch(_){} try{ if(recGain)recGain.disconnect(); }catch(_){} try{ if(recCtx&&recCtx.state!=='closed')recCtx.close(); }catch(_){} recPCM=[];recMode=null;}
 
 /* ---- 端侧 Whisper（transformers.js WASM，离线，支持中文） ---- */
 const WHISPER_MODEL='Xenova/whisper-tiny';
@@ -1776,24 +1822,79 @@ async function loadWhisper(){ if(whisperPipe)return whisperPipe; if(whisperLoadi
 async function resampleTo16k(ab){ const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext; const off=new OC(1,Math.max(1,Math.ceil(ab.duration*16000)),16000); const s=off.createBufferSource(); s.buffer=ab; s.connect(off.destination); s.start(); const r=await off.startRendering(); return r.getChannelData(0); }
 async function transcribeViaWhisper(blob){ const arr=await blob.arrayBuffer(); const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC(); const buf=await ac.decodeAudioData(arr.slice(0)); const f32=await resampleTo16k(buf); if(ac.close)ac.close(); const pipe=await loadWhisper(); const out=await pipe(f32,{sampling_rate:16000,language:'zh',task:'transcribe',return_timestamps:false}); return (out&&out.text)||''; }
 
-/* ---- 麦克风录音（MediaRecorder → Blob） ---- */
-let recStream=null,recMR=null,recChunks=[];
-function pickMime(){ const c=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']; for(const m of c){ if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m; } return ''; }
-async function startRec(){ recChunks=[]; recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}}); const MR=window.MediaRecorder; recMR=new MR(recStream,{mimeType:pickMime()}); recMR.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; recMR.start(); }
-function stopRec(){ return new Promise(res=>{ if(!recMR){res(null);return;} const mr=recMR; mr.onstop=()=>{ const blob=new Blob(recChunks,{type:mr.mimeType||'audio/webm'}); recChunks=[]; if(recStream)recStream.getTracks().forEach(t=>t.stop()); res(blob); }; if(mr.state!=='inactive')mr.stop(); else res(null); }); }
-async function recordThenTranscribe(){ const blob=await stopRec(); if(!blob)throw new Error('无录音数据'); return await transcribeViaWhisper(blob); }
+/* ---- 麦克风录音：Android WebView 的 getUserMedia 已占用 AudioRecord，MediaRecorder 必报 "Could not start audio source"，故一律走 Web Audio 直采。
+   优先 AudioWorklet（稳定可靠），不可用时兜底 ScriptProcessorNode ---- */
+let recStream=null,recCtx=null,recProc=null,recGain=null,recPCM=[],recSR=16000,recMode=null,recWorklet=null;
+const REC_WORKLET_SRC="class RP extends AudioWorkletProcessor{process(inputs){const i=inputs[0];if(i&&i[0]){this.port.postMessage(new Float32Array(i[0]));}return true;} }registerProcessor('recproc',RP);";
+async function startRec(){
+  recPCM=[]; recMode=null;
+  recStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  const AC=window.AudioContext||window.webkitAudioContext;
+  recCtx=new AC(); recSR=recCtx.sampleRate;
+  const src=recCtx.createMediaStreamSource(recStream);
+  const sink=recCtx.createGain(); sink.gain.value=0; recGain=sink; // 静音输出，避免回授啸叫
+  if(recCtx.audioWorklet){
+    try{
+      const blob=new Blob([REC_WORKLET_SRC],{type:'application/javascript'});
+      const url=URL.createObjectURL(blob);
+      await recCtx.audioWorklet.addModule(url);
+      URL.revokeObjectURL(url);
+      recWorklet=new AudioWorkletNode(recCtx,'recproc');
+      recWorklet.port.onmessage=e=>{ const d=e.data; if(d&&d.length)recPCM.push(d); };
+      src.connect(recWorklet); recWorklet.connect(sink); sink.connect(recCtx.destination);
+      recMode='aw';
+      console.log('[rec] AudioWorklet capture started');
+    }catch(err){ console.warn('[rec] AudioWorklet init failed, fallback to ScriptProcessor',err); try{ if(recWorklet)recWorklet.disconnect(); }catch(_){} recWorklet=null; }
+  }
+  if(!recMode){
+    recProc=recCtx.createScriptProcessor(4096,1,1);
+    recProc.onaudioprocess=e=>{ const d=e.inputBuffer.getChannelData(0); if(d&&d.length)recPCM.push(new Float32Array(d)); };
+    src.connect(recProc); recProc.connect(sink); sink.connect(recCtx.destination);
+    recMode='sp';
+    console.log('[rec] ScriptProcessor capture started');
+  }
+  if(recCtx.state==='suspended'){ try{ await recCtx.resume(); }catch(_){} }
+}
+function stopRec(){ return new Promise(res=>{
+  try{ if(recStream)recStream.getTracks().forEach(t=>t.stop()); }catch(_){}
+  const arr=recPCM||[]; const total=arr.reduce((s,a)=>s+a.length,0);
+  try{ if(recWorklet)recWorklet.disconnect(); }catch(_){}
+  try{ if(recProc)recProc.disconnect(); }catch(_){}
+  try{ if(recGain)recGain.disconnect(); }catch(_){}
+  try{ if(recCtx&&recCtx.state!=='closed')recCtx.close(); }catch(_){}
+  if(!total){ res(null); return; }
+  const pcm=new Float32Array(total); let off=0; for(const c of arr){ pcm.set(c,off); off+=c.length; }
+  console.log('[rec] captured pcm len='+pcm.length+' sr='+recSR+' mode='+recMode);
+  res({pcm, sampleRate:recSR});
+}); }
+async function recordThenTranscribe(){
+  const r=await stopRec(); if(!r)throw new Error('无录音数据');
+  let peak=0; for(let i=0;i<r.pcm.length;i+=257){ const a=Math.abs(r.pcm[i]); if(a>peak)peak=a; }
+  if(peak<0.01) throw new Error('未捕获到声音（请对着麦克风说话，或检查麦克风权限）');
+  if(voiceStatus)voiceStatus.textContent='已捕获 '+(r.pcm.length/r.sampleRate).toFixed(1)+' 秒音频，端侧 Whisper 识别中…';
+  const pipe=await loadWhisper();
+  const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const off=new OC(1, Math.ceil(r.pcm.length*(16000/r.sampleRate)), 16000);
+  const buf=off.createBuffer(1, r.pcm.length, r.sampleRate); buf.copyToChannel(r.pcm,0);
+  const sn=off.createBufferSource(); sn.buffer=buf; sn.connect(off.destination); sn.start();
+  const f32=await off.startRendering();
+  const out=await pipe(f32.getChannelData(0),{sampling_rate:16000,language:'zh',task:'transcribe',return_timestamps:false});
+  return (out&&out.text)||'';
+}
 
 /* ---- 微信式长按：上滑/左滑=发送，右滑=取消 ---- */
 const voiceGo=document.getElementById('voiceGo');
-let vHold=false,vMode='neutral',vDownT=0,vStartPt=null,vMoved=false,vLoadP=null;
+let vHold=false,vMode='neutral',vDownT=0,vStartPt=null,vMoved=false,vLoadP=null,vStartP=null,vRecFailed=false;
 const vPt=e=>{const t=(e.touches&&e.touches[0])||e;return{x:t.clientX,y:t.clientY};};
 async function vBegin(){
   if(voiceState==='done')return;
   voiceState='listening';voice.classList.add('listening');voice.classList.remove('send','cancel');vMode='neutral';
   voiceStatus.textContent='聆听中…（上滑/左滑发送，右滑取消）';voiceHint.textContent='上滑/左滑 发送 · 右滑 取消';
   if(voiceProg)voiceProg.style.display='none';
+  vRecFailed=false;
   vLoadP=loadWhisper().catch(e=>{console.warn('whisper preload skipped',e);}); /* 提前预热模型 */
-  try{ await startRec(); }catch(e){ voiceStatus.textContent='无法访问麦克风：'+(e&&e.message||e); voiceHint.textContent='请检查麦克风权限'; voiceState='idle'; }
+  vStartP=startRec().catch(e=>{ vRecFailed=true; voice.classList.remove('listening','send','cancel'); voiceStatus.textContent='无法访问麦克风：'+(e&&e.message||e); voiceHint.textContent='请检查麦克风权限，或点击 ✕ 关闭'; voiceState='idle'; });
+  try{ await vStartP; }catch(_){}
 }
 function vMove(e){
   if(!vHold)return;const p=vPt(e);const dx=p.x-vStartPt.x,dy=p.y-vStartPt.y;
@@ -1805,6 +1906,9 @@ function vMove(e){
 }
 async function vEnd(){
   if(!vHold)return;vHold=false;
+  if(vRecFailed){ voice.classList.remove('listening','send','cancel'); voiceState='idle'; voiceConfirm.disabled=true; return; }
+  try{ if(vStartP)await vStartP; }catch(_){}
+  if(voiceState!=='listening'){ voice.classList.remove('listening','send','cancel'); voiceState='idle'; return; }
   if(vMode==='cancel'){ try{await stopRec();}catch(e){} voice.classList.remove('listening','send','cancel');voiceStatus.textContent='已取消';voiceState='idle';voiceConfirm.disabled=true;document.getElementById('voiceText').value='';setTimeout(closeVoice,280);return; }
   /* 发送 / 中性释放：录音 → 端侧 Whisper 转写 */
   voiceStatus.textContent='转写中…端侧 Whisper 识别中';voiceHint.textContent='⏳ 正在识别语音';
@@ -1821,6 +1925,8 @@ voiceGo.addEventListener('pointerdown',e=>{vHold=true;vStartPt=vPt(e);vDownT=Dat
 window.addEventListener('pointermove',vMove,{passive:false});
 window.addEventListener('pointerup',vEnd);
 window.addEventListener('pointercancel',vEnd);
+/* 语音卡（✕ / 遮罩）关闭 —— 之前缺失，导致“叉”点不动 */
+document.querySelectorAll('[data-close-voice]').forEach(el=>el.addEventListener('click',closeVoice));
 voiceConfirm.addEventListener('click',()=>{
   const ta=document.getElementById('voiceText');if(!ta.value.trim())return;
   const d=aiParseTodo(ta.value);data.todos.unshift({id:uid(),...d});voiceState='idle';closeVoice();renderTodos();renderPlans();toast('已用端侧 Whisper 创建待办');
@@ -1839,13 +1945,14 @@ function bindPress(){
 
 /* ---- 导入页：长按语音一句话自动归类 ---- */
 (function(){
-  const b=document.getElementById('btnVoiceAI'); if(!b)return; let rec=false;
+  const b=document.getElementById('btnVoiceAI'); if(!b)return; let rec=false, recStartP=null, recFailed=false;
   const hint=()=>document.getElementById('voiceAIHint');
-  b.addEventListener('pointerdown',async e=>{ e.preventDefault(); if(rec)return; rec=true; b.classList.add('rec'); if(hint())hint().textContent='聆听中…松开识别';
+  b.addEventListener('pointerdown',async e=>{ e.preventDefault(); if(rec)return; rec=true; recFailed=false; b.classList.add('rec'); if(hint())hint().textContent='聆听中…松开识别';
     if(!ModelPreloader.isReady('whisper')){ if(hint())hint().textContent='首次预载语音模型…'; try{ await ModelPreloader.preload('whisper'); }catch(err){} }
-    try{ await startRec(); }catch(err){ rec=false; b.classList.remove('rec'); if(hint())hint().textContent=''; toast('无法录音：'+(err&&err.message||err)); }
+    recStartP=startRec().catch(err=>{ recFailed=true; rec=false; b.classList.remove('rec'); if(hint())hint().textContent=''; toast('无法录音：'+(err&&err.message||err)); });
+    try{ await recStartP; }catch(_){}
   });
-  b.addEventListener('pointerup',async ()=>{ if(!rec)return; rec=false; b.classList.remove('rec'); if(hint())hint().textContent='识别中…';
+  b.addEventListener('pointerup',async ()=>{ if(!rec)return; rec=false; b.classList.remove('rec'); if(recFailed){ if(hint())hint().textContent=''; return; } if(hint())hint().textContent='识别中…';
     try{ const text=(await recordThenTranscribe()).trim(); if(text){ openAIReview(text); if(hint())hint().textContent=''; } else if(hint())hint().textContent='未识别到内容'; }
     catch(err){ if(hint())hint().textContent=''; toast('识别失败：'+(err&&err.message||err)); }
   });
