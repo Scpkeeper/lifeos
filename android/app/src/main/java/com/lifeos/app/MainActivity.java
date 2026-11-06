@@ -40,6 +40,10 @@ public class MainActivity extends BridgeActivity {
                     runOnUiThread(() -> request.grant(request.getResources()));
                 }
             });
+            // Expose the native audio-capture bridge to JS as window.AndroidVoice.
+            // This is what actually records the mic (AudioRecord) and returns a WAV,
+            // bypassing the unreliable WebView getUserMedia path.
+            wv.addJavascriptInterface(new VoiceCapture(wv), "AndroidVoice");
         }
     }
 }
